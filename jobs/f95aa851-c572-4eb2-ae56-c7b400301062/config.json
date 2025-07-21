@@ -1,9 +1,0 @@
-{
-  "map_id": "8fcf251e-d3dd-4e1e-91d9-bad767e1fa1c",
-  "algorithm": "q_learning",
-  "episodes": 100,
-  "learning_rate": 0.1,
-  "discount_factor": 0.95,
-  "epsilon": 0.1,
-  "job_id": "f95aa851-c572-4eb2-ae56-c7b400301062"
-}

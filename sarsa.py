@@ -96,8 +96,8 @@ def state_to_str(pos):
     return f"({pos[0]},{pos[1]})"
 
 
-def main():
-    map_grid = load_map(MAP_PATH)
+def main(map_path, episodes, learning_rate, discount_factor, epsilon, output_dir):
+    map_grid = load_map(map_path)
     rows, cols = len(map_grid), len(map_grid[0])
     # 初始化 Q-Table
     q_table = {}
@@ -107,12 +107,12 @@ def main():
                 for action in get_valid_actions(map_grid, (i, j)):
                     q_table[(i, j, action)] = 0.0
     log_records = []
-    for episode in range(1, EPISODES+1):
+    for episode in range(1, episodes+1):
         pos = find_start(map_grid)
         state = pos
         valid_actions = get_valid_actions(map_grid, state)
         # 初始動作
-        if np.random.rand() < EPSILON:
+        if np.random.rand() < epsilon:
             action = np.random.choice(valid_actions)
         else:
             q_vals = [q_table.get((state[0], state[1], a), -np.inf) for a in valid_actions]
@@ -126,7 +126,7 @@ def main():
             next_valid_actions = get_valid_actions(map_grid, next_pos)
             # 下一動作（SARSA）
             if next_valid_actions:
-                if np.random.rand() < EPSILON:
+                if np.random.rand() < epsilon:
                     next_action = np.random.choice(next_valid_actions)
                 else:
                     next_q_vals = [q_table.get((next_pos[0], next_pos[1], a), -np.inf) for a in next_valid_actions]
@@ -139,7 +139,7 @@ def main():
                 next_q = 0.0
             # SARSA 更新
             q_key = (state[0], state[1], action)
-            q_table[q_key] = q_table.get(q_key, 0.0) + LEARNING_RATE * (reward + DISCOUNT_FACTOR * next_q - q_table.get(q_key, 0.0))
+            q_table[q_key] = q_table.get(q_key, 0.0) + learning_rate * (reward + discount_factor * next_q - q_table.get(q_key, 0.0))
             log_records.append({
                 'episode': episode,
                 'step': step,
@@ -154,13 +154,16 @@ def main():
             state = next_pos
             action = next_action
     # 輸出 Q-Table
+    os.makedirs(output_dir, exist_ok=True)
     qtable_rows = []
     for (i, j, action), value in q_table.items():
         qtable_rows.append({'state': state_to_str((i, j)), 'action': action, 'value': value})
-    pd.DataFrame(qtable_rows).to_csv(QTABLE_OUTPUT, index=False)
-    pd.DataFrame(log_records).to_csv(LOG_OUTPUT, index=False)
-    print(f"SARSA Q-Table saved to {QTABLE_OUTPUT}")
-    print(f"SARSA Log saved to {LOG_OUTPUT}")
+    qtable_output = os.path.join(output_dir, 'q_table.csv')
+    log_output = os.path.join(output_dir, 'log.csv')
+    pd.DataFrame(qtable_rows).to_csv(qtable_output, index=False)
+    pd.DataFrame(log_records).to_csv(log_output, index=False)
+    print(f"SARSA Q-Table saved to {qtable_output}")
+    print(f"SARSA Log saved to {log_output}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -171,14 +174,4 @@ if __name__ == '__main__':
     parser.add_argument('--epsilon', type=float, default=EPSILON, help='探索率')
     parser.add_argument('--output', type=str, default='output', help='輸出目錄')
     args = parser.parse_args()
-    # 覆蓋參數
-    global MAP_PATH, EPISODES, LEARNING_RATE, DISCOUNT_FACTOR, EPSILON, QTABLE_OUTPUT, LOG_OUTPUT
-    MAP_PATH = args.map
-    EPISODES = args.episodes
-    LEARNING_RATE = args.learning_rate
-    DISCOUNT_FACTOR = args.discount_factor
-    EPSILON = args.epsilon
-    os.makedirs(args.output, exist_ok=True)
-    QTABLE_OUTPUT = os.path.join(args.output, 'q_table.csv')
-    LOG_OUTPUT = os.path.join(args.output, 'log.csv')
-    main() 
+    main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output) 
