@@ -1,0 +1,40 @@
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Virtual environment folders
+venv/
+.venv/
+env/
+.env/
+
+# Training outputs and logs
+*.csv
+*.pkl
+*.log
+*.png
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
+
+# Personal environment/config
+.env
+
+# Uncomment and adjust if you want to keep sample data or outputs in a specific folder
+# output/
+# !output/README.md
+
+# Keep project files
+!*.json
+!*.md 
