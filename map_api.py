@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import os
@@ -64,4 +64,15 @@ def delete_map(map_id: str):
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail='Map not found')
     os.remove(path)
-    return {"id": map_id, "message": "Map deleted"} 
+    return {"id": map_id, "message": "Map deleted"}
+
+@app.post('/maps/json')
+def create_map_json(data: dict = Body(...)):
+    try:
+        map_id = str(uuid.uuid4())
+        path = os.path.join(MAPS_DIR, f'{map_id}.json')
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"id": map_id, "message": "Map created"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f'Invalid map data: {e}') 

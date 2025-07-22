@@ -3,6 +3,21 @@
 ## 專案簡介
 本專案為強化學習（Q-Learning、SARSA）於 Grid World 環境的互動學習平台，支援地圖自訂、Q-Table/Log 輸出與學習曲線分析。
 
+## 前端（React）專案啟動方法
+1. 進入 frontend 資料夾：
+   ```bash
+   cd frontend
+   ```
+2. 安裝前端套件：
+   ```bash
+   npm install
+   ```
+3. 啟動前端開發伺服器：
+   ```bash
+   npm start
+   ```
+4. 在瀏覽器開啟 http://localhost:3000 查看前端介面
+
 ## 執行流程
 1. 建立並啟動虛擬環境
 2. 安裝必要套件
@@ -18,6 +33,8 @@ pip freeze > requirements.txt
 python q_learning.py
 python sarsa.py
 python analyze.py
+
+ uvicorn main:app --reload
 ```
 
 ## 產出說明
