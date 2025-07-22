@@ -146,7 +146,7 @@ interface RuleForm {
   stepPenalty: number;
   goalReward: number;
   wallPenalty: number;
-  failPenalty: number;
+  maxSteps: number;
 }
 
 const MapManagement: React.FC = () => {
@@ -170,7 +170,7 @@ const MapManagement: React.FC = () => {
     stepPenalty: 0,
     goalReward: 100,
     wallPenalty: -5,
-    failPenalty: -50,
+    maxSteps: 100,
   });
   const [isEditRule, setIsEditRule] = useState(false);
 
@@ -321,7 +321,7 @@ const MapManagement: React.FC = () => {
       stepPenalty: 0,
       goalReward: 100,
       wallPenalty: -5,
-      failPenalty: -50,
+      maxSteps: 100,
     });
     fetchRules();
   };
@@ -337,7 +337,7 @@ const MapManagement: React.FC = () => {
       stepPenalty: rule.stepPenalty ?? 0,
       goalReward: rule.goalReward ?? 100,
       wallPenalty: rule.wallPenalty ?? -5,
-      failPenalty: rule.failPenalty ?? -50,
+      maxSteps: rule.maxSteps ?? 100,
     });
     setIsEditRule(true);
     setShowRuleDialog(true);
@@ -355,7 +355,7 @@ const MapManagement: React.FC = () => {
       stepPenalty: 0,
       goalReward: 100,
       wallPenalty: -5,
-      failPenalty: -50,
+      maxSteps: 100,
     });
     fetchRules();
   };
@@ -487,7 +487,7 @@ const MapManagement: React.FC = () => {
               stepPenalty: 0,
               goalReward: 100,
               wallPenalty: -5,
-              failPenalty: -50,
+              maxSteps: 100,
             }); }}>
               建立規則
             </Button>
@@ -517,11 +517,29 @@ const MapManagement: React.FC = () => {
               <TextField label="規則名稱" name="name" value={ruleForm.name} onChange={handleRuleChange} sx={{ width: 320, mb: 2 }} />
               <TextField label="寶箱獎勵" name="bonusReward" type="number" value={ruleForm.bonusReward} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
               <TextField label="陷阱懲罰" name="trapPenalty" type="number" value={ruleForm.trapPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="步數衰減" name="stepDecay" type="number" value={ruleForm.stepDecay} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="每步懲罰" name="stepPenalty" type="number" value={ruleForm.stepPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
+              <TextField label="步數衰減" name="stepDecay" type="number" value={ruleForm.stepDecay} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} inputProps={{ step: 0.01 }} />
+              <TextField label="每步懲罰" name="stepPenalty" type="number" value={ruleForm.stepPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} inputProps={{ step: 0.1 }} />
               <TextField label="終點獎勵" name="goalReward" type="number" value={ruleForm.goalReward} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
               <TextField label="撞牆懲罰" name="wallPenalty" type="number" value={ruleForm.wallPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="失敗懲罰" name="failPenalty" type="number" value={ruleForm.failPenalty} onChange={handleRuleChange} fullWidth />
+              <TextField label="最大步數" name="maxSteps" type="number" value={ruleForm.maxSteps} onChange={handleRuleChange} fullWidth />
+              <Box sx={{ mt: 3, p: 2, background: '#f5fbe7', borderRadius: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【參數說明】</Typography>
+                <Typography variant="body2" sx={{ color: '#555' }}>
+                  <b>寶箱獎勵</b>：每獲得一個寶箱可加多少分數。<br/>
+                  <b>陷阱懲罰</b>：每踩到陷阱會扣多少分數。<br/>
+                  <b>步數衰減</b>：每走一步，分數會乘上此衰減值（0~1）。<br/>
+                  <b>每步懲罰</b>：每走一步會扣多少分數。<br/>
+                  <b>終點獎勵</b>：抵達終點時加多少分數。<br/>
+                  <b>撞牆懲罰</b>：嘗試走到牆或障礙物時扣多少分數。<br/>
+                  <b>最大步數</b>：若遊戲步數達到最大步數，分數將歸零。<br/>
+                </Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【分數計算公式】</Typography>
+                <Typography variant="body2" sx={{ color: '#555' }}>
+                  總分 = 終點獎勵 + (寶箱數 × 寶箱獎勵) + (陷阱數 × 陷阱懲罰) + (步數 × 每步懲罰) + 其他懲罰<br/>
+                  每步分數會乘上步數衰減（如 0.99<sup>步數</sup>）。<br/>
+                  若遊戲步數達到最大步數，分數將歸零。
+                </Typography>
+              </Box>
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setShowRuleDialog(false)}>取消</Button>

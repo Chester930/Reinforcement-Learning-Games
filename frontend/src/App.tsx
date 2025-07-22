@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import MapManagement from './pages/MapManagement';
 import ManualPlay from './pages/ManualPlay';
 import AITraining from './pages/AITraining';
+import AIAnalysis from './pages/AIAnalysis';
 import Settings from './pages/Settings';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/maps" element={<MapManagement />} />
         <Route path="/manual" element={<ManualPlay />} />
         <Route path="/ai" element={<AITraining />} />
+        <Route path="/analysis" element={<AIAnalysis />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>

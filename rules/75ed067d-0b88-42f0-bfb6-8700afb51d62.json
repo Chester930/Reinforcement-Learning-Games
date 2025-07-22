@@ -1,0 +1,11 @@
+{
+  "id": "75ed067d-0b88-42f0-bfb6-8700afb51d62",
+  "name": "1",
+  "bonusReward": 10,
+  "trapPenalty": -3,
+  "stepDecay": 0.99,
+  "stepPenalty": -0.1,
+  "goalReward": 100,
+  "wallPenalty": -3,
+  "maxSteps": 100
+}

@@ -1,17 +1,217 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../Layout';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button, MenuItem, Select, Paper, Grid, Alert } from '@mui/material';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:8000';
+
+const TOOL_ICONS: Record<string, React.ReactNode> = {
+  start: <span style={{ fontSize: 32 }}>🧑‍🌾</span>,
+  goal: <span style={{ fontSize: 32 }}>🏁</span>,
+  bonus: <span style={{ fontSize: 32 }}>🪙</span>,
+  trap: <span style={{ fontSize: 32 }}>🕳️</span>,
+  obstacle: <span style={{ fontSize: 32 }}>🪨</span>,
+  empty: null,
+};
+
+function cellType(cell: string) {
+  switch (cell) {
+    case 'S': return 'start';
+    case 'G': return 'goal';
+    case 'R': return 'bonus';
+    case 'T': return 'trap';
+    case '1': return 'obstacle';
+    default: return 'empty';
+  }
+}
 
 const ManualPlay: React.FC = () => {
+  // 地圖與規則選擇
+  const [maps, setMaps] = useState<any[]>([]);
+  const [rules, setRules] = useState<any[]>([]);
+  const [selectedMap, setSelectedMap] = useState('');
+  const [selectedRule, setSelectedRule] = useState('');
+  const [mapData, setMapData] = useState<string[][]>([]);
+  const [ruleData, setRuleData] = useState<any>(null);
+  // 遊戲狀態
+  const [playerPos, setPlayerPos] = useState<[number, number] | null>(null);
+  const [score, setScore] = useState(0);
+  const [steps, setSteps] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameMsg, setGameMsg] = useState('');
+
+  // 載入地圖與規則列表
+  useEffect(() => {
+    axios.get(`${API_BASE}/maps/maps`).then(res => setMaps(res.data));
+    axios.get(`${API_BASE}/rules/rules`).then(res => setRules(res.data));
+  }, []);
+
+  // 載入地圖內容
+  const loadMap = async (id: string) => {
+    const res = await axios.get(`${API_BASE}/maps/maps/${id}`);
+    setMapData(res.data.map);
+    // 找起點
+    for (let i = 0; i < res.data.map.length; i++) {
+      for (let j = 0; j < res.data.map[0].length; j++) {
+        if (res.data.map[i][j] === 'S') {
+          setPlayerPos([i, j]);
+          return;
+        }
+      }
+    }
+    setPlayerPos([0, 0]);
+  };
+  // 載入規則內容
+  const loadRule = (id: string) => {
+    const rule = rules.find(r => r.id === id);
+    setRuleData(rule);
+  };
+
+  // 開始遊戲
+  const handleStart = async () => {
+    if (!selectedMap || !selectedRule) return;
+    await loadMap(selectedMap);
+    loadRule(selectedRule);
+    setScore(0);
+    setSteps(0);
+    setGameOver(false);
+    setGameMsg('');
+  };
+
+  // 移動
+  const movePlayer = useCallback((di: number, dj: number) => {
+    if (!playerPos || !mapData.length || !ruleData || gameOver) return;
+    const [i, j] = playerPos;
+    const ni = i + di;
+    const nj = j + dj;
+    const numRows = mapData.length;
+    const numCols = mapData[0].length;
+    let newScore = score;
+    let newSteps = steps + 1;
+    let msg = '';
+    // 撞牆
+    if (ni < 0 || ni >= numRows || nj < 0 || nj >= numCols || mapData[ni][nj] === '1') {
+      newScore += ruleData.wallPenalty;
+      msg = '撞牆！';
+    } else {
+      // 正常移動
+      setPlayerPos([ni, nj]);
+      // 每步懲罰
+      newScore += ruleData.stepPenalty;
+      // 寶箱
+      if (mapData[ni][nj] === 'R') newScore += ruleData.bonusReward;
+      // 陷阱
+      if (mapData[ni][nj] === 'T') newScore += ruleData.trapPenalty;
+      // 終點
+      if (mapData[ni][nj] === 'G') {
+        newScore += ruleData.goalReward;
+        setGameOver(true);
+        setGameMsg('恭喜到達終點！');
+      }
+    }
+    // 步數衰減
+    newScore = Math.round(newScore * Math.pow(ruleData.stepDecay, newSteps));
+    // 最大步數
+    if (newSteps >= ruleData.maxSteps) {
+      setGameOver(true);
+      setGameMsg('已達最大步數，分數歸零！');
+      newScore = 0;
+    }
+    setScore(newScore);
+    setSteps(newSteps);
+    if (!gameOver && msg) setGameMsg(msg);
+  }, [playerPos, mapData, ruleData, score, steps, gameOver]);
+
+  // 鍵盤操作
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (gameOver) return;
+      if (e.key === 'ArrowUp') movePlayer(-1, 0);
+      if (e.key === 'ArrowDown') movePlayer(1, 0);
+      if (e.key === 'ArrowLeft') movePlayer(0, -1);
+      if (e.key === 'ArrowRight') movePlayer(0, 1);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [movePlayer, gameOver]);
+
+  // 重玩
+  const handleRestart = () => {
+    setSelectedMap('');
+    setSelectedRule('');
+    setMapData([]);
+    setRuleData(null);
+    setPlayerPos(null);
+    setScore(0);
+    setSteps(0);
+    setGameOver(false);
+    setGameMsg('');
+  };
+
   return (
     <Layout title="手動遊玩">
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-        <Typography variant="h5" sx={{ color: 'secondary.main', fontWeight: 600 }}>
-          🕹️ 親自挑戰叢林迷宮！
-        </Typography>
-        <Typography sx={{ fontSize: 22 }}>
-          🧑‍🌾 操作探險家，收集寶藏，避開陷阱！
-        </Typography>
+      <Box sx={{ maxWidth: 700, mx: 'auto', mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Typography>選擇地圖：</Typography>
+          <Select value={selectedMap} onChange={e => setSelectedMap(e.target.value)} sx={{ minWidth: 120 }}>
+            {maps.map(m => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}
+          </Select>
+          <Typography>選擇規則：</Typography>
+          <Select value={selectedRule} onChange={e => setSelectedRule(e.target.value)} sx={{ minWidth: 120 }}>
+            {rules.map(r => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
+          </Select>
+          <Button variant="contained" color="primary" onClick={handleStart} disabled={!selectedMap || !selectedRule}>
+            開始遊戲
+          </Button>
+        </Box>
+        {mapData.length > 0 && playerPos && ruleData && (
+          <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+            {/* 地圖區域 */}
+            <Box>
+              <Paper sx={{ p: 2, display: 'inline-block', background: '#f5fbe7' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${mapData[0].length}, 48px)`, gap: 0 }}>
+                  {mapData.map((row, i) =>
+                    row.map((cell, j) => {
+                      const type = cellType(cell);
+                      const isPlayer = playerPos[0] === i && playerPos[1] === j;
+                      return (
+                        <Box key={`${i}-${j}`} sx={{ width: 48, height: 48, border: '1px solid #bdb76b', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, background: isPlayer ? '#b7e4c7' : '#e6f9d5', m: 0.2, position: 'relative' }}>
+                          {TOOL_ICONS[type]}
+                          {isPlayer && <Box sx={{ position: 'absolute', top: 2, right: 2, fontSize: 16, color: '#388e3c' }}>🧑‍🌾</Box>}
+                        </Box>
+                      );
+                    })
+                  )}
+                </Box>
+              </Paper>
+              <Box sx={{ mt: 2 }}>
+                <Typography>分數：<b>{score}</b></Typography>
+                <Typography>步數：<b>{steps} / {ruleData.maxSteps}</b></Typography>
+              </Box>
+              {gameMsg && <Alert sx={{ mt: 2 }} severity={gameOver ? 'success' : 'info'}>{gameMsg}</Alert>}
+              {gameOver && <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleRestart}>重玩</Button>}
+            </Box>
+            {/* 右側說明與規則 */}
+            <Box sx={{ minWidth: 260, maxWidth: 320, p: 2, background: '#f5fbe7', borderRadius: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【遊戲說明】</Typography>
+              <Typography variant="body2" sx={{ color: '#555', mb: 2 }}>
+                使用 <b>鍵盤方向鍵</b> 控制探險家移動。<br/>
+                目標：收集寶箱、避開陷阱，並在最大步數內抵達終點。<br/>
+                撞牆、踩陷阱、超過最大步數都會影響分數。
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【本局規則】</Typography>
+              <Typography variant="body2" sx={{ color: '#555' }}>
+                <b>寶箱獎勵</b>：{ruleData.bonusReward}<br/>
+                <b>陷阱懲罰</b>：{ruleData.trapPenalty}<br/>
+                <b>步數衰減</b>：{ruleData.stepDecay}<br/>
+                <b>每步懲罰</b>：{ruleData.stepPenalty}<br/>
+                <b>終點獎勵</b>：{ruleData.goalReward}<br/>
+                <b>撞牆懲罰</b>：{ruleData.wallPenalty}<br/>
+                <b>最大步數</b>：{ruleData.maxSteps}<br/>
+              </Typography>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Layout>
   );

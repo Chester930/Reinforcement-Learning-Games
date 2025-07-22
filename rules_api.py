@@ -15,10 +15,10 @@ class Rule(BaseModel):
     bonusReward: int
     trapPenalty: int
     stepDecay: float
-    stepPenalty: int
+    stepPenalty: float  # 改為 float
     goalReward: int
     wallPenalty: int
-    failPenalty: int
+    maxSteps: int
 
 # 取得所有規則
 @app.get('/rules', response_model=List[Rule])

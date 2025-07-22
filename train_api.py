@@ -4,8 +4,9 @@ import os
 import json
 import uuid
 import shutil
-from typing import Optional
+from typing import Optional, List
 import subprocess
+from datetime import datetime
 
 app = FastAPI()
 JOBS_DIR = 'jobs'
@@ -19,6 +20,12 @@ class TrainRequest(BaseModel):
     learning_rate: float = 0.1
     discount_factor: float = 0.95
     epsilon: float = 0.1
+    job_name: str # 新增
+
+class JobInfo(BaseModel):
+    job_id: str
+    job_name: str
+    created_at: str
 
 @app.post('/train')
 def start_train(req: TrainRequest):
@@ -32,15 +39,14 @@ def start_train(req: TrainRequest):
     # 儲存訓練設定
     config = req.dict()
     config['job_id'] = job_id
+    config['created_at'] = datetime.now().isoformat()
     config_path = os.path.join(job_dir, 'config.json')
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
     # 複製地圖檔到 job_dir
     shutil.copy(map_path, os.path.join(job_dir, 'map.json'))
-    # 啟動訓練腳本（同步執行，簡化版，可改為非同步）
-    # 這裡假設有 train_worker.py 可接受命令列參數
+    # 啟動訓練腳本
     algo_script = 'q_learning.py' if req.algorithm == 'q_learning' else 'sarsa.py'
-    # 產生訓練命令
     cmd = [
         'python', algo_script,
         '--map', os.path.join(job_dir, 'map.json'),
@@ -50,7 +56,6 @@ def start_train(req: TrainRequest):
         '--epsilon', str(req.epsilon),
         '--output', job_dir
     ]
-    # 執行訓練（同步，未來可改為 background）
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         status = 'completed'
@@ -58,7 +63,6 @@ def start_train(req: TrainRequest):
         status = 'failed'
         with open(os.path.join(job_dir, 'error.log'), 'w', encoding='utf-8') as f:
             f.write(str(e))
-    # 儲存狀態
     with open(os.path.join(job_dir, 'status.json'), 'w', encoding='utf-8') as f:
         json.dump({'status': status}, f)
     return {'job_id': job_id, 'status': status}
@@ -83,4 +87,21 @@ def get_train_result(job_id: str):
         qtable = f.read()
     with open(log_path, 'r', encoding='utf-8') as f:
         log = f.read()
-    return {'q_table.csv': qtable, 'log.csv': log} 
+    return {'q_table.csv': qtable, 'log.csv': log}
+
+@app.get('/train/jobs', response_model=List[JobInfo])
+def list_jobs():
+    jobs = []
+    for job_id in os.listdir(JOBS_DIR):
+        job_dir = os.path.join(JOBS_DIR, job_id)
+        config_path = os.path.join(job_dir, 'config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            jobs.append(JobInfo(
+                job_id=job_id,
+                job_name=config.get('job_name', ''),
+                created_at=config.get('created_at', '')
+            ))
+    jobs.sort(key=lambda x: x.created_at, reverse=True)
+    return jobs 
