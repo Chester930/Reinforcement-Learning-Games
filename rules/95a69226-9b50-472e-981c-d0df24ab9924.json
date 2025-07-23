@@ -1,0 +1,16 @@
+{
+  "id": "95a69226-9b50-472e-981c-d0df24ab9924",
+  "name": "Q-Learning 1",
+  "bonusReward": 20,
+  "trapPenalty": -20,
+  "stepDecay": 0.99,
+  "stepPenalty": -0.1,
+  "goalReward": 100,
+  "wallPenalty": -5,
+  "maxSteps": 100,
+  "learningRate": 0.2,
+  "discountFactor": 0.95,
+  "epsilon": 1.0,
+  "seed": null,
+  "optimistic": true
+}

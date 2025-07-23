@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import os
 import json
 import uuid
-from typing import List
+from typing import List, Optional
 
 app = FastAPI()
 RULES_DIR = 'rules'
@@ -12,13 +12,20 @@ os.makedirs(RULES_DIR, exist_ok=True)
 class Rule(BaseModel):
     id: str
     name: str
+    # 遊戲規則參數
     bonusReward: int
     trapPenalty: int
     stepDecay: float
-    stepPenalty: float  # 改為 float
+    stepPenalty: float
     goalReward: int
     wallPenalty: int
     maxSteps: int
+    # 強化學習參數
+    learningRate: float = 0.1
+    discountFactor: float = 0.95
+    epsilon: float = 1.0
+    seed: Optional[int] = None
+    optimistic: bool = False
 
 # 取得所有規則
 @app.get('/rules', response_model=List[Rule])

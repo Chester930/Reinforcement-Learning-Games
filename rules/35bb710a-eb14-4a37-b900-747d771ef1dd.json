@@ -1,0 +1,16 @@
+{
+  "id": "35bb710a-eb14-4a37-b900-747d771ef1dd",
+  "name": "SARSA 1",
+  "bonusReward": 20,
+  "trapPenalty": -20,
+  "stepDecay": 0.99,
+  "stepPenalty": -0.1,
+  "goalReward": 100,
+  "wallPenalty": -5,
+  "maxSteps": 100,
+  "learningRate": 0.07,
+  "discountFactor": 0.9,
+  "epsilon": 0.5,
+  "seed": null,
+  "optimistic": false
+}

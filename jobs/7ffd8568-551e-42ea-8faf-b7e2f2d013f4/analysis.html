@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARSA 訓練分析報告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 960px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #003d7a;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        strong {
+            color: #c82333;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .chart {
+            flex: 1;
+            min-width: 300px;
+        }
+        .summary-box {
+            background-color: #e2f0ff;
+            border-left: 5px solid #0056b3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .score-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .score {
+            font-size: 3em;
+            font-weight: bold;
+            color: #c82333;
+            display: inline-block;
+            padding: 10px 30px;
+            border: 3px solid #c82333;
+            border-radius: 10px;
+        }
+        .score-label {
+            display: block;
+            font-size: 1.2em;
+            color: #555;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #0056b3;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SARSA 訓練分析報告</h1>
+
+        <h2>1. 學習效果評估</h2>
+        
+        <h3>1.1 學習曲線趨勢分析</h3>
+        <div class="chart-container">
+            <div class="chart">
+                <canvas id="rewardChart"></canvas>
+            </div>
+            <div class="chart">
+                <canvas id="stepsChart"></canvas>
+            </div>
+        </div>
+        <ul>
+            <li><strong>獎勵曲線</strong>: 獎勵序列顯示出明顯的<strong>正向學習趨勢</strong>。智能體在訓練初期經歷探索後，獎勵穩定上升，表明其學會了獲取正向獎勵。</li>
+            <li><strong>步數曲線</strong>: 步數曲線揭示了一個<strong>嚴重問題</strong>。理想情況下步數應隨訓練減少，但數據顯示步數反而快速<strong>增加並飽和在100步</strong>（很可能是回合步數上限）。</li>
+        </ul>
+
+        <h3>1.2 策略有效性與收斂性評估</h3>
+        <ul>
+            <li><strong>策略有效性</strong>: <strong>無效</strong>。儘管平均獎勵高，但智能體並未學會有效率地到達目標，只是學會了在環境中「存活」以累積獎勵。</li>
+            <li><strong>收斂性</strong>: 訓練已<strong>收斂到一個次優（Sub-optimal）策略</strong>。智能體穩定地執行一套高獎勵但無法導向終點的循環動作。</li>
+        </ul>
+        
+        <h3>1.3 最終性能表現</h3>
+        <ul>
+            <li><strong>表面性能</strong>: 從「最終獎勵: 1000」來看，表現似乎很好。</li>
+            <li><strong>實際性能</strong>: <strong>極差</strong>。智能體在每個回合都耗盡所有步數，這在實際應用中完全不可接受。</li>
+        </ul>
+
+        <h2>2. 問題診斷</h2>
+
+        <div class="summary-box">
+            <strong>核心問題：次優循環（Sub-optimal Loop）</strong><br>
+            智能體陷入了一個高獎勵的陷阱循環。最優路徑 <code>[(4, 4), (5, 4), (5, 5), (5, 4)]</code> 和飽和的步數曲線是直接證據。
+        </div>
+
+        <h3>2.1 根本原因分析</h3>
+        <ul>
+            <li><strong>探索不足 (Insufficient Exploration)</strong>: 最可能的原因。探索率(ε)衰減過快，導致智能體過早地停止探索，開始利用（Exploit）發現的第一個局部最優解。</li>
+            <li><strong>SARSA 算法特性</strong>: 作為On-Policy算法，SARSA忠實地學習當前策略的價值。如果策略本身有缺陷（如陷入循環），SARSA會強化這個缺陷。</li>
+            <li><strong>獎勵函數設計可能存在缺陷</strong>: 特定區域可能提供了不成比例的高額中間獎勵，誘使智能體停留。</li>
+        </ul>
+
+        <h3>2.2 Q-Table 質量與擬合問題</h3>
+        <ul>
+            <li><strong>Q-Table 質量</strong>: Q-Table的最高價值對構成了一個閉環，而不是指向目標的鏈條，價值函數學習不完整。</li>
+            <li><strong>擬合問題</strong>: 可視為一種<strong>「過擬合」到局部獎勵結構</strong>的現象，對全局最優路徑則嚴重欠擬合。</li>
+        </ul>
+        
+        <h2>3. 改進建議</h2>
+        
+        <h3>3.1 參數調整（優先級最高）</h3>
+        <ol>
+            <li><strong>調整探索率 (ε)</strong>: 增加ε衰減周期，或設定一個最小ε值（如 <code>ε_min = 0.1</code>）以保證持續探索。</li>
+            <li><strong>引入步數懲罰 (Reward Shaping)</strong>: 每走一步給予一個小的負獎勵（如 <code>-0.1</code>），以激勵智能體尋找更短路徑。</li>
+            <li><strong>學習率 (α) 和折扣因子 (γ)</strong>: 可暫時不調或略微降低α。高γ值是合理的。</li>
+        </ol>
+
+        <h3>3.2 訓練策略優化</h3>
+        <ul>
+            <li><strong>大幅增加訓練回合數</strong>: 100回合嚴重不足。建議增加到 <strong>1000 ~ 5000 回合</strong>以提供充分的探索時間。</li>
+        </ul>
+
+        <h3>3.3 算法選擇</h3>
+        <ul>
+            <li><strong>嘗試 Q-Learning</strong>: 作為Off-Policy算法，Q-Learning的「貪婪」更新特性使其更擅長打破次優循環，在當前問題上可能表現更優。</li>
+        </ul>
+
+        <h2>4. 算法特性分析 (SARSA)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>特性</th>
+                    <th>描述</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>優點</strong></td>
+                    <td>On-Policy，學習到的策略更「安全」、「保守」，適用於風險敏感場景。收斂性相對穩定。</td>
+                </tr>
+                <tr>
+                    <td><strong>缺點</strong></td>
+                    <td>對探索策略敏感，易陷入次優策略。學習速度可能慢於Q-Learning。</td>
+                </tr>
+                <tr>
+                    <td><strong>適用場景</strong></td>
+                    <td>訓練過程安全性和穩定性至關重要的任務（如機器人控制）。</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>5. 總結與評分</h2>
+        
+        <div class="score-container">
+            <div class="score">3 / 10</div>
+            <div class="score-label">整體訓練效果評分</div>
+        </div>
+        
+        <h3>主要成就與問題總結</h3>
+        <ul>
+            <li><strong>主要成就</strong>: 成功啟動學習過程，並定位到環境中高價值回報的區域。</li>
+            <li><strong>核心問題</strong>: 因<strong>探索不足</strong>導致模型收斂到<strong>次優循環陷阱</strong>，未能找到全局最優策略。</li>
+        </ul>
+        
+        <h3>實用性評估</h3>
+        <ul>
+            <li><strong>當前模型實用性</strong>: <strong>零</strong>。模型無法在規定步數內完成任務。</li>
+            <li><strong>改進後潛力</strong>: <strong>高</strong>。問題非常典型，通過建議的調整有極大概率可以解決。</li>
+        </ul>
+
+    </div>
+
+    <script>
+        const rewardData = [-52, 176, -43, 292, 135, 461, 376, 450, 438, 560, 101, 615, 615, 127, 424, 593, 681, 758, 780, 846];
+        const stepsData = [3, 39, 5, 77, 47, 100, 81, 100, 85, 100, 37, 100, 100, 33, 77, 100, 100, 100, 100, 100];
+        const labels = Array.from({ length: 20 }, (_, i) => `Ep ${i + 1}`);
+
+        // Reward Chart
+        const ctxReward = document.getElementById('rewardChart').getContext('2d');
+        new Chart(ctxReward, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '每回合獎勵',
+                    data: rewardData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '獎勵學習曲線 (前20回合)',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: '回合 (Episode)' } },
+                    y: { title: { display: true, text: '獎勵 (Reward)' } }
+                }
+            }
+        });
+
+        // Steps Chart
+        const ctxSteps = document.getElementById('stepsChart').getContext('2d');
+        new Chart(ctxSteps, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '每回合步數',
+                    data: stepsData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '步數變化曲線 (前20回合)',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: '回合 (Episode)' } },
+                    y: { title: { display: true, text: '步數 (Steps)' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

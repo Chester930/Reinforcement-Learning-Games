@@ -19,8 +19,10 @@ class TrainRequest(BaseModel):
     episodes: int = 500
     learning_rate: float = 0.1
     discount_factor: float = 0.95
-    epsilon: float = 0.1
-    job_name: str # 新增
+    epsilon: float = 1.0  # 更新為初始探索率
+    job_name: str
+    seed: Optional[int] = None  # 新增隨機種子參數
+    optimistic: bool = False  # 新增樂觀初始化參數
 
 class JobInfo(BaseModel):
     job_id: str
@@ -56,6 +58,15 @@ def start_train(req: TrainRequest):
         '--epsilon', str(req.epsilon),
         '--output', job_dir
     ]
+    
+    # 新增隨機種子參數
+    if req.seed is not None:
+        cmd.extend(['--seed', str(req.seed)])
+    
+    # 新增樂觀初始化參數
+    if req.optimistic:
+        cmd.append('--optimistic')
+    
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         status = 'completed'

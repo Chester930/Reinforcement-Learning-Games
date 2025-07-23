@@ -6,26 +6,26 @@ import { useNavigate } from 'react-router-dom';
 const Home: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <Layout title="叢林尋寶強化學習平台">
+    <Layout title="強化學習平台-叢林世界">
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
         <Typography variant="h5" sx={{ color: 'secondary.main', fontWeight: 600 }}>
-          歡迎來到 Q 版叢林尋寶世界！
+          歡迎來到 叢林世界！
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
           <Button variant="contained" color="primary" size="large" onClick={() => navigate('/maps')}>
             地圖管理
           </Button>
-          <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/manual')}>
-            開始遊玩(手動)
+          <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/manual')} sx={{ color: 'white' }}>
+            開始遊戲
           </Button>
           <Button variant="contained" color="primary" size="large" onClick={() => navigate('/ai')}>
-            AI遊玩
+            AI學習
           </Button>
-          <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/analysis')}>
-            AI分析
+          <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/analysis')} sx={{ color: 'white' }}>
+            結果分析
           </Button>
-          <Button variant="outlined" color="primary" size="large" onClick={() => navigate('/settings')}>
-            設置
+          <Button variant="contained" color="primary" size="large" onClick={() => navigate('/settings')}>
+            設定
           </Button>
         </Box>
         {/* 系統說明 */}

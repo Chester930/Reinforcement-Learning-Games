@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Typography, Tabs, Tab, Paper, List, ListItem, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from '@mui/material';
+import { Box, Button, Typography, Tabs, Tab, Paper, List, ListItem, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, FormControlLabel, Switch, FormControl, InputLabel, Input } from '@mui/material';
 import Layout from '../Layout';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
@@ -7,11 +7,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 const API_BASE = 'http://localhost:8000';
-
-const mockMaps = [
-  { id: '1', name: '叢林初探', size: [6, 6] },
-  { id: '2', name: '神廟迷宮', size: [8, 8] },
-];
 
 // 拖拉式地圖編輯器元件（簡化版）
 const TOOL_ICONS = [
@@ -82,11 +77,27 @@ function DragMapEditor({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
       {/* 左側工具列 */}
-      <Box sx={{ minWidth: 220, maxWidth: 260, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ minWidth: 280, maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         {/* <TextField label="地圖名稱" value={mapName} onChange={e => setMapName(e.target.value)} sx={{ width: 220, mb: 2 }} /> */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <TextField label="行數" type="number" value={size[0]} onChange={e => setSize([Number(e.target.value), size[1]])} sx={{ width: 80 }} />
-          <TextField label="列數" type="number" value={size[1]} onChange={e => setSize([size[0], Number(e.target.value)])} sx={{ width: 80 }} />
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, width: '100%', justifyContent: 'center' }}>
+          <FormControl sx={{ width: 120 }}>
+            <InputLabel htmlFor="rows-input">行數</InputLabel>
+            <Input
+              id="rows-input"
+              type="number"
+              value={size[0]}
+              onChange={e => setSize([Number(e.target.value), size[1]])}
+            />
+          </FormControl>
+          <FormControl sx={{ width: 120 }}>
+            <InputLabel htmlFor="cols-input">列數</InputLabel>
+            <Input
+              id="cols-input"
+              type="number"
+              value={size[1]}
+              onChange={e => setSize([size[0], Number(e.target.value)])}
+            />
+          </FormControl>
         </Box>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           {TOOL_ICONS.map(tool => (
@@ -140,6 +151,7 @@ function DragMapEditor({
 interface RuleForm {
   id: string;
   name: string;
+  // 遊戲規則參數
   bonusReward: number;
   trapPenalty: number;
   stepDecay: number;
@@ -147,6 +159,12 @@ interface RuleForm {
   goalReward: number;
   wallPenalty: number;
   maxSteps: number;
+  // 強化學習參數
+  learningRate: number;
+  discountFactor: number;
+  epsilon: number;
+  seed: number | null;
+  optimistic: boolean;
 }
 
 const MapManagement: React.FC = () => {
@@ -171,6 +189,11 @@ const MapManagement: React.FC = () => {
     goalReward: 100,
     wallPenalty: -5,
     maxSteps: 100,
+    learningRate: 0.1,
+    discountFactor: 0.95,
+    epsilon: 1.0,
+    seed: null,
+    optimistic: false,
   });
   const [isEditRule, setIsEditRule] = useState(false);
 
@@ -228,11 +251,6 @@ const MapManagement: React.FC = () => {
     setIsEditMap(true);
     setEditingMapId(map.id);
     setShowMapDialog(true);
-  };
-
-  // 地圖表單變更
-  const handleMapFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMapForm({ ...mapForm, [e.target.name]: e.target.value });
   };
 
   // 地圖儲存
@@ -300,11 +318,10 @@ const MapManagement: React.FC = () => {
   };
 
   // 建立/編輯規則表單處理
-  const handleRuleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleRuleChange = (name: string, value: any) => {
     setRuleForm({
       ...ruleForm,
-      [name]: name === 'name' ? value : Number(value)
+      [name]: value
     });
   };
 
@@ -322,6 +339,11 @@ const MapManagement: React.FC = () => {
       goalReward: 100,
       wallPenalty: -5,
       maxSteps: 100,
+      learningRate: 0.1,
+      discountFactor: 0.95,
+      epsilon: 1.0,
+      seed: null,
+      optimistic: false,
     });
     fetchRules();
   };
@@ -338,6 +360,11 @@ const MapManagement: React.FC = () => {
       goalReward: rule.goalReward ?? 100,
       wallPenalty: rule.wallPenalty ?? -5,
       maxSteps: rule.maxSteps ?? 100,
+              learningRate: rule.learningRate ?? 0.1,
+        discountFactor: rule.discountFactor ?? 0.95,
+        epsilon: rule.epsilon ?? 1.0,
+      seed: rule.seed ?? null,
+      optimistic: rule.optimistic ?? false,
     });
     setIsEditRule(true);
     setShowRuleDialog(true);
@@ -356,6 +383,11 @@ const MapManagement: React.FC = () => {
       goalReward: 100,
       wallPenalty: -5,
       maxSteps: 100,
+      learningRate: 0.1,
+      discountFactor: 0.95,
+      epsilon: 1.0,
+      seed: null,
+      optimistic: false,
     });
     fetchRules();
   };
@@ -452,7 +484,7 @@ const MapManagement: React.FC = () => {
             <DialogTitle>{isEditMap ? '編輯地圖' : '創建地圖'}</DialogTitle>
             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <TextField label="地圖名稱" value={mapName} onChange={e => setMapName(e.target.value)} sx={{ width: 320, mb: 2, mt: 1, zIndex: 2, background: '#fff', borderRadius: 2 }} />
-              <DialogContent sx={{ overflow: 'auto', maxHeight: '70vh', minWidth: 'unset', maxWidth: 'fit-content', p: 0 }}>
+              <DialogContent sx={{ overflow: 'auto', maxHeight: '70vh', minWidth: 'unset', maxWidth: 'fit-content', p: 0, pt: 2 }}>
                 <DragMapEditor
                   mapData={mapData}
                   setMapData={setMapData}
@@ -488,6 +520,11 @@ const MapManagement: React.FC = () => {
               goalReward: 100,
               wallPenalty: -5,
               maxSteps: 100,
+              learningRate: 0.1,
+              discountFactor: 0.95,
+              epsilon: 1.0,
+              seed: null,
+              optimistic: false,
             }); }}>
               建立規則
             </Button>
@@ -505,37 +542,150 @@ const MapManagement: React.FC = () => {
                     </IconButton>
                   </Box>
                 }>
-                  <ListItemText primary={rule.name} secondary={`獎勵: ${rule.reward}，陷阱: ${rule.trap}，步數衰減: ${rule.stepDecay}`}/>
+                  <ListItemText 
+                    primary={rule.name} 
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" sx={{ color: '#666' }}>
+                          🎮 遊戲：獎勵 {rule.goalReward || 100}，陷阱 {rule.trapPenalty || -20}，步數衰減 {rule.stepDecay || 0.99}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#666' }}>
+                          🤖 AI：學習率 {rule.learningRate || 0.1}，折扣因子 {rule.discountFactor || 0.95}，探索率 {rule.epsilon || 1.0}
+                          {rule.seed && `，種子 ${rule.seed}`}
+                          {rule.optimistic && '，樂觀初始化'}
+                        </Typography>
+                      </Box>
+                    }
+                  />
                 </ListItem>
               ))}
             </List>
           </Paper>
           {/* 規則建立/編輯 Dialog */}
-          <Dialog open={showRuleDialog} onClose={() => setShowRuleDialog(false)}>
+          <Dialog open={showRuleDialog} onClose={() => setShowRuleDialog(false)} maxWidth="md" fullWidth>
             <DialogTitle>規則設定</DialogTitle>
-            <DialogContent sx={{ minWidth: 350 }}>
-              <TextField label="規則名稱" name="name" value={ruleForm.name} onChange={handleRuleChange} sx={{ width: 320, mb: 2 }} />
-              <TextField label="寶箱獎勵" name="bonusReward" type="number" value={ruleForm.bonusReward} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="陷阱懲罰" name="trapPenalty" type="number" value={ruleForm.trapPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="步數衰減" name="stepDecay" type="number" value={ruleForm.stepDecay} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} inputProps={{ step: 0.01 }} />
-              <TextField label="每步懲罰" name="stepPenalty" type="number" value={ruleForm.stepPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} inputProps={{ step: 0.1 }} />
-              <TextField label="終點獎勵" name="goalReward" type="number" value={ruleForm.goalReward} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="撞牆懲罰" name="wallPenalty" type="number" value={ruleForm.wallPenalty} onChange={handleRuleChange} fullWidth sx={{ mb: 2 }} />
-              <TextField label="最大步數" name="maxSteps" type="number" value={ruleForm.maxSteps} onChange={handleRuleChange} fullWidth />
+            <DialogContent sx={{ minWidth: 600 }}>
+              <TextField
+                label="規則名稱"
+                value={ruleForm.name}
+                onChange={(e) => handleRuleChange('name', e.target.value)}
+                fullWidth
+                sx={{ mb: 2, minWidth: '300px' }}
+              />
+              
+              {/* 遊戲規則參數 */}
+              <Typography variant="h6" sx={{ mt: 2, mb: 1, color: 'primary.main' }}>🎮 遊戲規則參數</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                <TextField label="寶箱獎勵" type="number" value={ruleForm.bonusReward} onChange={(e) => handleRuleChange('bonusReward', Number(e.target.value))} />
+                <TextField label="陷阱懲罰" type="number" value={ruleForm.trapPenalty} onChange={(e) => handleRuleChange('trapPenalty', Number(e.target.value))} />
+                <TextField label="步數衰減" type="number" value={ruleForm.stepDecay} onChange={(e) => handleRuleChange('stepDecay', Number(e.target.value))} inputProps={{ step: 0.01 }} />
+                <TextField label="每步懲罰" type="number" value={ruleForm.stepPenalty} onChange={(e) => handleRuleChange('stepPenalty', Number(e.target.value))} inputProps={{ step: 0.1 }} />
+                <TextField label="終點獎勵" type="number" value={ruleForm.goalReward} onChange={(e) => handleRuleChange('goalReward', Number(e.target.value))} />
+                <TextField label="撞牆懲罰" type="number" value={ruleForm.wallPenalty} onChange={(e) => handleRuleChange('wallPenalty', Number(e.target.value))} />
+                <TextField label="最大步數" type="number" value={ruleForm.maxSteps} onChange={(e) => handleRuleChange('maxSteps', Number(e.target.value))} />
+              </Box>
+
+              {/* 強化學習參數 */}
+              <Typography variant="h6" sx={{ mt: 3, mb: 1, color: 'secondary.main' }}>🤖 強化學習參數</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                <TextField 
+                  label="學習率 (α)" 
+                  type="number" 
+                  value={ruleForm.learningRate} 
+                  onChange={(e) => handleRuleChange('learningRate', Number(e.target.value))}
+                  inputProps={{ step: 0.01, min: 0, max: 1 }}
+                  helperText="新知識覆蓋舊知識的速度"
+                />
+                <TextField 
+                  label="折扣因子 (γ)" 
+                  type="number" 
+                  value={ruleForm.discountFactor} 
+                  onChange={(e) => handleRuleChange('discountFactor', Number(e.target.value))}
+                  inputProps={{ step: 0.01, min: 0, max: 1 }}
+                  helperText="未來獎勵的重要性"
+                />
+                <TextField 
+                  label="初始探索率 (ε)" 
+                  type="number" 
+                  value={ruleForm.epsilon} 
+                  onChange={(e) => handleRuleChange('epsilon', Number(e.target.value))}
+                  inputProps={{ step: 0.01, min: 0, max: 1 }}
+                  helperText="隨機探索的初始機率"
+                />
+                <TextField 
+                  label="隨機種子 (可選)" 
+                  type="number" 
+                  value={ruleForm.seed || ''} 
+                  onChange={(e) => handleRuleChange('seed', e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="留空為隨機"
+                  helperText="設定後可重現相同結果"
+                />
+              </Box>
+              
+              <FormControlLabel
+                control={
+                  <Switch 
+                    checked={ruleForm.optimistic} 
+                    onChange={(e) => handleRuleChange('optimistic', e.target.checked)}
+                  />
+                }
+                label="樂觀初始化"
+                sx={{ mb: 2 }}
+              />
+              <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>
+                樂觀初始化：將 Q-Table 初始值設為較高值，可能加速收斂
+              </Typography>
+
+              {/* 參數說明 */}
               <Box sx={{ mt: 3, p: 2, background: '#f5fbe7', borderRadius: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【參數說明】</Typography>
-                <Typography variant="body2" sx={{ color: '#555' }}>
-                  <b>寶箱獎勵</b>：每獲得一個寶箱可加多少分數。<br/>
-                  <b>陷阱懲罰</b>：每踩到陷阱會扣多少分數。<br/>
-                  <b>步數衰減</b>：每走一步，分數會乘上此衰減值（0~1）。<br/>
-                  <b>每步懲罰</b>：每走一步會扣多少分數。<br/>
-                  <b>終點獎勵</b>：抵達終點時加多少分數。<br/>
-                  <b>撞牆懲罰</b>：嘗試走到牆或障礙物時扣多少分數。<br/>
-                  <b>最大步數</b>：若遊戲步數達到最大步數，分數將歸零。<br/>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【遊戲規則參數說明】</Typography>
+                <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+                  <b>寶箱獎勵</b>：每獲得一個寶箱可加多少分數。建議值：10~50。<br/>
+                  <b>陷阱懲罰</b>：每踩到陷阱會扣多少分數。建議值：-10~-50。<br/>
+                  <b>步數衰減</b>：每走一步，分數會乘上此衰減值（0~1）。建議值：0.95~0.99。<br/>
+                  <b>每步懲罰</b>：每走一步會扣多少分數。建議值：0~-2。<br/>
+                  <b>終點獎勵</b>：抵達終點時加多少分數。建議值：50~200。<br/>
+                  <b>撞牆懲罰</b>：嘗試走到牆或障礙物時扣多少分數。建議值：-1~-10。<br/>
+                  <b>最大步數</b>：若遊戲步數達到最大步數，分數將歸零。建議值：50~200。
                 </Typography>
+                
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【強化學習參數說明】</Typography>
+                <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+                  <b>學習率 (α)</b>：新知識覆蓋舊知識的速度，0~1。較高值學習快但可能不穩定，較低值學習慢但穩定。建議值：0.1~0.5。<br/>
+                  <b>折扣因子 (γ)</b>：未來獎勵的重要性，0~1。越接近 1 越重視長遠獎勵，越接近 0 越重視即時獎勵。建議值：0.9~0.99。<br/>
+                  <b>初始探索率 (ε)</b>：AI 隨機探索的初始機率，會隨訓練逐漸衰減。較高值探索更多但學習慢，較低值利用已知知識但可能陷入局部最優。建議值：0.5~1.0。<br/>
+                  <b>隨機種子</b>：設定後可重現相同結果，適合實驗比較和調試。留空為隨機，每次訓練結果不同。<br/>
+                  <b>樂觀初始化</b>：將 Q-Table 初始值設為較高值，鼓勵探索未知狀態，可能加速收斂但需要更多訓練回合。
+                </Typography>
+                
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【參數調優建議】</Typography>
+                <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+                  <b>初學者</b>：使用預設值開始，觀察 AI 表現。<br/>
+                  <b>進階用戶</b>：根據地圖複雜度調整參數。簡單地圖可用較低學習率和探索率，複雜地圖需要較高值。<br/>
+                  <b>實驗比較</b>：設定隨機種子，保持其他參數不變，比較不同演算法效果。<br/>
+                  <b>性能優化</b>：樂觀初始化適合複雜環境，但需要更多訓練回合。
+                </Typography>
+                
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【Q-Learning vs SARSA 設定差異】</Typography>
+                <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+                  <b>Q-Learning（離線型）</b>：<br/>
+                  • 學習率 (α)：建議 0.1~0.3，較保守設定，避免過度學習<br/>
+                  • 折扣因子 (γ)：建議 0.95~0.99，重視長遠獎勵<br/>
+                  • 初始探索率 (ε)：建議 0.8~1.0，積極探索未知狀態<br/>
+                  • 樂觀初始化：推薦開啟，加速探索<br/>
+                  <br/>
+                  <b>SARSA（在線型）</b>：<br/>
+                  • 學習率 (α)：建議 0.05~0.2，更保守，避免策略震盪<br/>
+                  • 折扣因子 (γ)：建議 0.9~0.95，平衡即時與長遠獎勵<br/>
+                  • 初始探索率 (ε)：建議 0.5~0.8，適度探索，避免過度冒險<br/>
+                  • 樂觀初始化：可選，但效果不如 Q-Learning 明顯<br/>
+                  <br/>
+                  <b>選擇建議</b>：Q-Learning 適合追求最優解，SARSA 適合穩健表現。
+                </Typography>
+                
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【分數計算公式】</Typography>
                 <Typography variant="body2" sx={{ color: '#555' }}>
-                  總分 = 終點獎勵 + (寶箱數 × 寶箱獎勵) + (陷阱數 × 陷阱懲罰) + (步數 × 每步懲罰) + 其他懲罰<br/>
+                  總分 = 終點獎勵 + (寶箱數 × 寶箱獎勵) + (陷阱數 × 陷阱懲罰) + (步數 × 每步懲罰) + 撞牆懲罰<br/>
                   每步分數會乘上步數衰減（如 0.99<sup>步數</sup>）。<br/>
                   若遊戲步數達到最大步數，分數將歸零。
                 </Typography>

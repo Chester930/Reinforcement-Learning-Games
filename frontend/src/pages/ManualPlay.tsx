@@ -39,6 +39,9 @@ const ManualPlay: React.FC = () => {
   const [steps, setSteps] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [gameMsg, setGameMsg] = useState('');
+  // 當前遊戲的地圖和規則ID（用於重玩時保持相同設定）
+  const [currentGameMapId, setCurrentGameMapId] = useState('');
+  const [currentGameRuleId, setCurrentGameRuleId] = useState('');
 
   // 載入地圖與規則列表
   useEffect(() => {
@@ -70,6 +73,17 @@ const ManualPlay: React.FC = () => {
   // 開始遊戲
   const handleStart = async () => {
     if (!selectedMap || !selectedRule) return;
+    
+    // 檢查是否選擇了新的地圖或規則
+    const isNewMap = selectedMap !== currentGameMapId;
+    const isNewRule = selectedRule !== currentGameRuleId;
+    
+    // 只有當選擇了新的地圖或規則時，才更新當前遊戲設定
+    if (isNewMap || isNewRule) {
+      setCurrentGameMapId(selectedMap);
+      setCurrentGameRuleId(selectedRule);
+    }
+    
     await loadMap(selectedMap);
     loadRule(selectedRule);
     setScore(0);
@@ -135,13 +149,18 @@ const ManualPlay: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, [movePlayer, gameOver]);
 
-  // 重玩
+  // 重玩（使用相同地圖與規則）
   const handleRestart = () => {
-    setSelectedMap('');
-    setSelectedRule('');
-    setMapData([]);
-    setRuleData(null);
-    setPlayerPos(null);
+    // 確保有當前遊戲的地圖和規則設定
+    if (!currentGameMapId || !currentGameRuleId) return;
+    
+    // 使用當前遊戲的地圖和規則設定
+    setSelectedMap(currentGameMapId);
+    setSelectedRule(currentGameRuleId);
+    // 重新載入地圖和規則
+    loadMap(currentGameMapId);
+    loadRule(currentGameRuleId);
+    // 重置遊戲狀態
     setScore(0);
     setSteps(0);
     setGameOver(false);
@@ -189,7 +208,11 @@ const ManualPlay: React.FC = () => {
                 <Typography>步數：<b>{steps} / {ruleData.maxSteps}</b></Typography>
               </Box>
               {gameMsg && <Alert sx={{ mt: 2 }} severity={gameOver ? 'success' : 'info'}>{gameMsg}</Alert>}
-              {gameOver && <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleRestart}>重玩</Button>}
+              {gameOver && (
+                <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleRestart}>
+                  再玩一次
+                </Button>
+              )}
             </Box>
             {/* 右側說明與規則 */}
             <Box sx={{ minWidth: 260, maxWidth: 320, p: 2, background: '#f5fbe7', borderRadius: 2 }}>
@@ -198,6 +221,12 @@ const ManualPlay: React.FC = () => {
                 使用 <b>鍵盤方向鍵</b> 控制探險家移動。<br/>
                 目標：收集寶箱、避開陷阱，並在最大步數內抵達終點。<br/>
                 撞牆、踩陷阱、超過最大步數都會影響分數。
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【AI 演算法差異】</Typography>
+              <Typography variant="body2" sx={{ color: '#555', mb: 2 }}>
+                <b>Q-Learning</b>：追求最優路徑，可能選擇冒險但收益高的路線。<br/>
+                <b>SARSA</b>：選擇穩健路徑，避免風險，適合有陷阱的地圖。<br/>
+                在 AI 訓練頁面可選擇不同演算法進行訓練。
               </Typography>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【本局規則】</Typography>
               <Typography variant="body2" sx={{ color: '#555' }}>

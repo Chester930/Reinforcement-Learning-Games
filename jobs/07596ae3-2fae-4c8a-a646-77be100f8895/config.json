@@ -1,0 +1,13 @@
+{
+  "map_id": "021ae6d5-95c4-4124-8e15-441a9451949f",
+  "algorithm": "q_learning",
+  "episodes": 100,
+  "learning_rate": 0.2,
+  "discount_factor": 0.95,
+  "epsilon": 1.0,
+  "job_name": "Q-Learning_1",
+  "seed": null,
+  "optimistic": true,
+  "job_id": "07596ae3-2fae-4c8a-a646-77be100f8895",
+  "created_at": "2025-07-23T12:15:54.317110"
+}

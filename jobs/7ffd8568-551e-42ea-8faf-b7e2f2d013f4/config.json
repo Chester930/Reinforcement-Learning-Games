@@ -1,0 +1,13 @@
+{
+  "map_id": "021ae6d5-95c4-4124-8e15-441a9451949f",
+  "algorithm": "sarsa",
+  "episodes": 100,
+  "learning_rate": 0.07,
+  "discount_factor": 0.9,
+  "epsilon": 0.5,
+  "job_name": " SARSA_1",
+  "seed": null,
+  "optimistic": false,
+  "job_id": "7ffd8568-551e-42ea-8faf-b7e2f2d013f4",
+  "created_at": "2025-07-23T12:16:10.263127"
+}

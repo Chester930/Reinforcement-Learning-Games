@@ -6,9 +6,7 @@ import argparse
 
 # 參數設定
 MAP_PATH = 'maps/example_map.json'
-QTABLE_OUTPUT = 'output/q_table.csv'
-LOG_OUTPUT = 'output/log.csv'
-EPISODES = 100
+EPISODES = 500
 MAX_STEPS = 100
 LEARNING_RATE = 0.1
 DISCOUNT_FACTOR = 0.95
