@@ -33,6 +33,7 @@ REWARD_TRAP = -50
 # Q-Table 初始化設定
 OPTIMISTIC_INIT = False  # 是否使用樂觀初始化
 OPTIMISTIC_VALUE = 1.0   # 樂觀初始值
+STRICT_GOAL_REWARD_ZERO = True  # 預設開啟 reward 歸零
 
 
 def load_map(path):
@@ -135,7 +136,7 @@ def get_epsilon(episode, total_episodes):
     return max(epsilon, EPSILON_END)
 
 
-def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None):
+def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True):
     # 設定隨機種子以提高可重現性
     if seed is not None:
         np.random.seed(seed)
@@ -167,7 +168,8 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
         pos = find_start(map_grid)
         episode_reward = 0
         current_epsilon = get_epsilon(episode, episodes)
-        
+        success = False
+        last_cell = None
         for step in range(1, MAX_STEPS+1):
             state = pos
             valid_actions = get_valid_actions(map_grid, state)
@@ -185,6 +187,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
             cell = map_grid[next_pos[0]][next_pos[1]]
             reward = get_reward(cell)
             episode_reward += reward
+            last_cell = cell
             
             next_valid_actions = get_valid_actions(map_grid, next_pos)
             next_qs = [q_table.get((next_pos[0], next_pos[1], a), 0.0) for a in next_valid_actions]
@@ -202,14 +205,19 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
                 'reward': reward,
                 'next_state': state_to_str(next_pos),
                 'done': is_terminal(cell),
-                'epsilon': current_epsilon
+                'epsilon': current_epsilon,
+                'success': cell == GOAL
             })
             
             # 修正終止條件：目標或陷阱都終止回合
             if is_terminal(cell) or step == MAX_STEPS:
+                if cell == GOAL:
+                    success = True
                 break
             pos = next_pos
-        
+        # 最終 reward 歸零判斷
+        if strict_goal_reward_zero and last_cell != GOAL:
+            episode_reward = 0
         episode_rewards.append(episode_reward)
         
         # 每 50 回合顯示進度
@@ -248,6 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default='output', help='輸出目錄')
     parser.add_argument('--seed', type=int, default=None, help='隨機種子（用於可重現性）')
     parser.add_argument('--optimistic', action='store_true', help='使用樂觀初始化')
+    parser.add_argument('--strict_goal_reward_zero', action='store_true', default=True, help='沒到終點時分數歸零（預設開啟）')
     
     args = parser.parse_args()
     
@@ -256,4 +265,4 @@ if __name__ == '__main__':
         OPTIMISTIC_INIT = True
         print("使用樂觀初始化")
     
-    main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed) 
+    main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero) 

@@ -1,0 +1,8 @@
+{
+  "timestamp": "20250723_164615",
+  "job_id": "32f1d07c-8ae2-491d-b6c0-56fe54037de0",
+  "html_source": "markdown_converted",
+  "has_html_block": false,
+  "html_content_length": 15688,
+  "html_content_preview": "<p>好的，身為您的強化學習專業分析顧問，我將根據您提供的訓練數據，進行深入分析，並提供一份包含學習效果評估、問題診斷、改進建議、算法分析及總結評分的完整報告。</p>\n\n<p>報告將同時以 Markdown 和 HTML 兩種格式呈現。</p>\n\n<hr />\n\n<h3>HTML 格式報告</h3>\n\n<p><!DOCTYPE html></p>\n\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習訓練分析報告</title>\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n    <style>\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\",..."
+}

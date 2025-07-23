@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../Layout';
-import { Typography, Box, Button, MenuItem, Select, Paper, Grid, Alert } from '@mui/material';
+import { Typography, Box, Button, MenuItem, Select, Paper, Alert } from '@mui/material';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000';
@@ -114,8 +114,6 @@ const ManualPlay: React.FC = () => {
       newScore += ruleData.stepPenalty;
       // 寶箱
       if (mapData[ni][nj] === 'R') newScore += ruleData.bonusReward;
-      // 陷阱
-      if (mapData[ni][nj] === 'T') newScore += ruleData.trapPenalty;
       // 終點
       if (mapData[ni][nj] === 'G') {
         newScore += ruleData.goalReward;
@@ -219,8 +217,8 @@ const ManualPlay: React.FC = () => {
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【遊戲說明】</Typography>
               <Typography variant="body2" sx={{ color: '#555', mb: 2 }}>
                 使用 <b>鍵盤方向鍵</b> 控制探險家移動。<br/>
-                目標：收集寶箱、避開陷阱，並在最大步數內抵達終點。<br/>
-                撞牆、踩陷阱、超過最大步數都會影響分數。
+                目標：收集寶箱，並在最大步數內抵達終點。<br/>
+                撞牆、超過最大步數都會影響分數。
               </Typography>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【AI 演算法差異】</Typography>
               <Typography variant="body2" sx={{ color: '#555', mb: 2 }}>
@@ -231,7 +229,6 @@ const ManualPlay: React.FC = () => {
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【本局規則】</Typography>
               <Typography variant="body2" sx={{ color: '#555' }}>
                 <b>寶箱獎勵</b>：{ruleData.bonusReward}<br/>
-                <b>陷阱懲罰</b>：{ruleData.trapPenalty}<br/>
                 <b>步數衰減</b>：{ruleData.stepDecay}<br/>
                 <b>每步懲罰</b>：{ruleData.stepPenalty}<br/>
                 <b>終點獎勵</b>：{ruleData.goalReward}<br/>

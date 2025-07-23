@@ -13,7 +13,7 @@ const Home: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
           <Button variant="contained" color="primary" size="large" onClick={() => navigate('/maps')}>
-            地圖管理
+            地圖與規則
           </Button>
           <Button variant="contained" color="secondary" size="large" onClick={() => navigate('/manual')} sx={{ color: 'white' }}>
             開始遊戲

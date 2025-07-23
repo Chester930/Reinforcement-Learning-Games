@@ -1,8 +1,0 @@
-{
-  "timestamp": "20250723_143936",
-  "job_id": "07596ae3-2fae-4c8a-a646-77be100f8895",
-  "html_source": "markdown_converted",
-  "has_html_block": false,
-  "html_content_length": 15097,
-  "html_content_preview": "<p>好的，作為一位專業的強化學習分析顧問，我將根據您提供的訓練數據進行深入分析，並提供一份包含學習效果評估、問題診斷、改進建議、算法分析及總結評分的完整報告。</p>\n\n<p>報告將同時以 Markdown 和 HTML 兩種格式呈現。</p>\n\n<hr />\n\n<h3>Markdown 版本</h3>\n\n<h1>強化學習訓練分析報告</h1>\n\n<h2>1. 學習效果評估</h2>\n\n<h3>1.1 學習曲線分析</h3>\n\n<ul>\n<li><p><strong>獎勵趨勢 (Reward Trend):</strong></p>\n\n<ul>\n<li><strong>初期 (第1-8回合):</strong> 代理 (Agent) 處於高度探索階段。獎勵值波動劇烈，從 <code>241</code> 到 <code>-45</code> 不等，顯示代理正在嘗試不同的策略，並頻繁遭遇失敗（負獎勵）或快速結束回合。</li>\n<li><strong>中期 (第9-13回合):</strong> 代理出現了「頓悟」時刻。從第9回合開始，獎勵從 <code>402</code> 躍升至 ..."
-}

@@ -13,6 +13,7 @@ import re
 import requests
 import markdown2
 from datetime import datetime
+import subprocess
 
 app = FastAPI()
 JOBS_DIR = 'jobs'
@@ -471,5 +472,25 @@ def get_analysis_report(job_id: str):
     with open(report_path, 'r', encoding='utf-8') as f:
         content = f.read()
     return {"content": content}
+
+@app.get('/{job_id}/verify')
+def verify_training_api(job_id: str):
+    log_path = os.path.join(JOBS_DIR, job_id, 'log.csv')
+    if not os.path.exists(log_path):
+        raise HTTPException(status_code=404, detail='Log not found')
+    try:
+        result = subprocess.run(['python', 'verify_training.py', log_path], capture_output=True, text=True, timeout=10)
+        verify_ok = '[OK]' in result.stdout
+        return {
+            'verify_ok': verify_ok,
+            'verify_output': result.stdout,
+            'returncode': result.returncode
+        }
+    except Exception as e:
+        return {
+            'verify_ok': False,
+            'verify_output': f'驗證過程發生錯誤: {str(e)}',
+            'returncode': -1
+        }
 
  

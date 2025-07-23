@@ -153,7 +153,6 @@ interface RuleForm {
   name: string;
   // 遊戲規則參數
   bonusReward: number;
-  trapPenalty: number;
   stepDecay: number;
   stepPenalty: number;
   goalReward: number;
@@ -183,7 +182,6 @@ const MapManagement: React.FC = () => {
     id: '',
     name: '',
     bonusReward: 20,
-    trapPenalty: -20,
     stepDecay: 0.99,
     stepPenalty: 0,
     goalReward: 100,
@@ -333,7 +331,6 @@ const MapManagement: React.FC = () => {
       id: '',
       name: '',
       bonusReward: 20,
-      trapPenalty: -20,
       stepDecay: 0.99,
       stepPenalty: 0,
       goalReward: 100,
@@ -354,7 +351,6 @@ const MapManagement: React.FC = () => {
       id: rule.id,
       name: rule.name,
       bonusReward: rule.bonusReward ?? 20,
-      trapPenalty: rule.trapPenalty ?? -20,
       stepDecay: rule.stepDecay ?? 0.99,
       stepPenalty: rule.stepPenalty ?? 0,
       goalReward: rule.goalReward ?? 100,
@@ -377,7 +373,6 @@ const MapManagement: React.FC = () => {
       id: '',
       name: '',
       bonusReward: 20,
-      trapPenalty: -20,
       stepDecay: 0.99,
       stepPenalty: 0,
       goalReward: 100,
@@ -440,7 +435,7 @@ const MapManagement: React.FC = () => {
   }
 
   return (
-    <Layout title="地圖管理">
+    <Layout title="地圖與規則管理">
       <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 3 }}>
         <Tab label="我的地圖" />
         <Tab label="我的規則" />
@@ -514,7 +509,6 @@ const MapManagement: React.FC = () => {
               id: '',
               name: '',
               bonusReward: 20,
-              trapPenalty: -20,
               stepDecay: 0.99,
               stepPenalty: 0,
               goalReward: 100,
@@ -547,7 +541,7 @@ const MapManagement: React.FC = () => {
                     secondary={
                       <>
                         <Typography variant="body2" sx={{ color: '#666' }}>
-                          🎮 遊戲：獎勵 {rule.goalReward || 100}，陷阱 {rule.trapPenalty || -20}，步數衰減 {rule.stepDecay || 0.99}
+                          🎮 遊戲：獎勵 {rule.goalReward || 100}，步數衰減 {rule.stepDecay || 0.99}
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#666' }}>
                           🤖 AI：學習率 {rule.learningRate || 0.1}，折扣因子 {rule.discountFactor || 0.95}，探索率 {rule.epsilon || 1.0}
@@ -577,7 +571,6 @@ const MapManagement: React.FC = () => {
               <Typography variant="h6" sx={{ mt: 2, mb: 1, color: 'primary.main' }}>🎮 遊戲規則參數</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
                 <TextField label="寶箱獎勵" type="number" value={ruleForm.bonusReward} onChange={(e) => handleRuleChange('bonusReward', Number(e.target.value))} />
-                <TextField label="陷阱懲罰" type="number" value={ruleForm.trapPenalty} onChange={(e) => handleRuleChange('trapPenalty', Number(e.target.value))} />
                 <TextField label="步數衰減" type="number" value={ruleForm.stepDecay} onChange={(e) => handleRuleChange('stepDecay', Number(e.target.value))} inputProps={{ step: 0.01 }} />
                 <TextField label="每步懲罰" type="number" value={ruleForm.stepPenalty} onChange={(e) => handleRuleChange('stepPenalty', Number(e.target.value))} inputProps={{ step: 0.1 }} />
                 <TextField label="終點獎勵" type="number" value={ruleForm.goalReward} onChange={(e) => handleRuleChange('goalReward', Number(e.target.value))} />
@@ -641,7 +634,6 @@ const MapManagement: React.FC = () => {
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>【遊戲規則參數說明】</Typography>
                 <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
                   <b>寶箱獎勵</b>：每獲得一個寶箱可加多少分數。建議值：10~50。<br/>
-                  <b>陷阱懲罰</b>：每踩到陷阱會扣多少分數。建議值：-10~-50。<br/>
                   <b>步數衰減</b>：每走一步，分數會乘上此衰減值（0~1）。建議值：0.95~0.99。<br/>
                   <b>每步懲罰</b>：每走一步會扣多少分數。建議值：0~-2。<br/>
                   <b>終點獎勵</b>：抵達終點時加多少分數。建議值：50~200。<br/>
@@ -685,7 +677,7 @@ const MapManagement: React.FC = () => {
                 
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【分數計算公式】</Typography>
                 <Typography variant="body2" sx={{ color: '#555' }}>
-                  總分 = 終點獎勵 + (寶箱數 × 寶箱獎勵) + (陷阱數 × 陷阱懲罰) + (步數 × 每步懲罰) + 撞牆懲罰<br/>
+                  總分 = 終點獎勵 + (寶箱數 × 寶箱獎勵) + (步數 × 每步懲罰) + 撞牆懲罰<br/>
                   每步分數會乘上步數衰減（如 0.99<sup>步數</sup>）。<br/>
                   若遊戲步數達到最大步數，分數將歸零。
                 </Typography>

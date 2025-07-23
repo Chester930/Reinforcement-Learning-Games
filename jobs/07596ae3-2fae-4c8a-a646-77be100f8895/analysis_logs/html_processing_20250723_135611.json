@@ -1,8 +1,0 @@
-{
-  "timestamp": "20250723_135611",
-  "job_id": "07596ae3-2fae-4c8a-a646-77be100f8895",
-  "html_source": "ai_generated",
-  "has_html_block": true,
-  "html_content_length": 10309,
-  "html_content_preview": "<!DOCTYPE html>\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習 (Q-Learning) 訓練分析報告</title>\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n    <style>\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\";\n          ..."
-}

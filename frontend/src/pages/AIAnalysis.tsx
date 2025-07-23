@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../Layout';
 import { Typography, Box, Paper, Select, MenuItem, Button, CircularProgress, Alert } from '@mui/material';
 import axios from 'axios';
@@ -14,6 +14,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import AIAnalysisPathSim from './AIAnalysisPathSim';
 
 // 簡單的 markdown 轉 HTML 函數
 const markdownToHtml = (markdown: string): string => {
@@ -41,82 +42,12 @@ const AIAnalysis: React.FC = () => {
   const [report, setReport] = useState<string | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoAnalyze, setAutoAnalyze] = useState(false);
-  const [analyzedJobs, setAnalyzedJobs] = useState<string[]>([]);
   const [showReanalyze, setShowReanalyze] = useState(false);
+  const [mapData, setMapData] = useState<string[][] | null>(null);
+  const [optimalPath, setOptimalPath] = useState<[number, number][] | null>(null);
+  const [verifyResult, setVerifyResult] = useState<{verify_ok: boolean, verify_output: string} | null>(null);
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/train/train/jobs`).then(res => setJobs(res.data));
-  }, []);
-
-  useEffect(() => {
-    if (!selectedJob) return;
-    setLoading(true);
-    setCurveData(null); setHeatmapUrl(null); setPathUrl(null); setReport(null); setError(null);
-    setShowReanalyze(false);
-    
-    const info = jobs.find(j => j.job_id === selectedJob);
-    setJobInfo(info);
-    
-    // 檢查是否已經分析過這個job
-    const isAlreadyAnalyzed = analyzedJobs.includes(selectedJob);
-    
-    // 使用 Promise.all 來並行處理所有API調用
-    const loadData = async () => {
-      try {
-        // 並行載入所有數據
-        const [curveRes, heatmapRes, pathRes] = await Promise.allSettled([
-          axios.get(`${API_BASE}/analysis/${selectedJob}/curve`),
-          axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`),
-          axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`)
-        ]);
-        
-        // 處理學習曲線數據
-        if (curveRes.status === 'fulfilled') {
-          setCurveData(curveRes.value.data);
-        }
-        
-        // 處理熱力圖
-        if (heatmapRes.status === 'fulfilled' && heatmapRes.value.data.heatmap_png_base64) {
-          setHeatmapUrl(`data:image/png;base64,${heatmapRes.value.data.heatmap_png_base64}`);
-        }
-        
-        // 處理最優路徑
-        if (pathRes.status === 'fulfilled' && pathRes.value.data.path_png_base64) {
-          setPathUrl(`data:image/png;base64,${pathRes.value.data.path_png_base64}`);
-        }
-        
-        // 處理分析報告
-        if (isAlreadyAnalyzed) {
-          try {
-            const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
-            if (reportRes.data && reportRes.data.content) {
-              const htmlContent = markdownToHtml(reportRes.data.content);
-              setReport(htmlContent);
-              setShowReanalyze(true);
-            } else {
-              // 如果沒有現有報告，自動分析
-              await handleAnalyze();
-            }
-          } catch (error) {
-            // 如果載入失敗，自動分析
-            await handleAnalyze();
-          }
-        } else {
-          // 如果沒有分析過，自動分析
-          await handleAnalyze();
-        }
-      } catch (error) {
-        console.error('載入數據時發生錯誤:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadData();
-  }, [selectedJob, jobs, analyzedJobs]);
-
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async () => {
     if (!selectedJob) return;
     setReportLoading(true);
     setError(null);
@@ -135,7 +66,6 @@ const AIAnalysis: React.FC = () => {
           htmlContent = markdownToHtml(response.data.md);
         }
         setReport(htmlContent);
-        setAnalyzedJobs(prev => [...prev, selectedJob]);
         setShowReanalyze(true);
       } else {
         setError('分析完成但沒有返回內容');
@@ -145,7 +75,81 @@ const AIAnalysis: React.FC = () => {
     } finally {
       setReportLoading(false);
     }
-  };
+  }, [selectedJob]);
+
+  useEffect(() => {
+    axios.get(`${API_BASE}/train/train/jobs`).then(res => setJobs(res.data));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedJob) return;
+    setLoading(true);
+    setCurveData(null); setHeatmapUrl(null); setPathUrl(null); setReport(null); setError(null);
+    setShowReanalyze(false);
+    setMapData(null); setOptimalPath(null);
+    setVerifyResult(null);
+    const info = jobs.find(j => j.job_id === selectedJob);
+    setJobInfo(info);
+
+    const loadData = async () => {
+      try {
+        // 並行載入所有數據
+        const [curveRes, heatmapRes, pathRes] = await Promise.allSettled([
+          axios.get(`${API_BASE}/analysis/${selectedJob}/curve`),
+          axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`),
+          axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`)
+        ]);
+        if (curveRes.status === 'fulfilled') {
+          setCurveData(curveRes.value.data);
+        }
+        if (heatmapRes.status === 'fulfilled' && heatmapRes.value.data.heatmap_png_base64) {
+          setHeatmapUrl(`data:image/png;base64,${heatmapRes.value.data.heatmap_png_base64}`);
+        }
+        if (pathRes.status === 'fulfilled' && pathRes.value.data.path_png_base64) {
+          setPathUrl(`data:image/png;base64,${pathRes.value.data.path_png_base64}`);
+        }
+        // 載入 map.json
+        axios.get(`${API_BASE}/jobs/${selectedJob}/map.json`).then(res => {
+          if (res.data && res.data.map) setMapData(res.data.map);
+        });
+        // 載入 optimal-path
+        axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`).then(res => {
+          if (res.data && res.data.optimal_path) setOptimalPath(res.data.optimal_path);
+        });
+        // 載入自動驗證結果
+        try {
+          const verifyRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/verify`);
+          setVerifyResult(verifyRes.data);
+        } catch (e) {
+          setVerifyResult(null);
+        }
+        // 先嘗試載入分析報告
+        try {
+          const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
+          if (response.data && reportRes.data.content) {
+            const htmlContent = markdownToHtml(reportRes.data.content);
+            setReport(htmlContent);
+            setShowReanalyze(true);
+          } else {
+            // 沒有現有報告，自動分析
+            await handleAnalyze();
+          }
+        } catch (error: any) {
+          if (error.response && error.response.status === 404) {
+            // 沒有現有報告，自動分析
+            await handleAnalyze();
+          } else {
+            setError('載入分析報告失敗');
+          }
+        }
+      } catch (error) {
+        console.error('載入數據時發生錯誤:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [selectedJob, jobs, handleAnalyze]);
 
   const handleReanalyze = async () => {
     if (!selectedJob) return;
@@ -280,6 +284,15 @@ const AIAnalysis: React.FC = () => {
                   </Box>
                 )}
 
+                {verifyResult && !verifyResult.verify_ok && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      <b>訓練驗證異常：</b><br/>
+                      <pre style={{whiteSpace:'pre-wrap'}}>{verifyResult.verify_output}</pre>
+                    </Typography>
+                  </Alert>
+                )}
+
                 {report && (
                   <Paper sx={{ p: 3, background: '#fff', borderRadius: 2, mb: 3 }}>
                     {/* 學習曲線圖表 */}
@@ -390,6 +403,9 @@ const AIAnalysis: React.FC = () => {
             </Box>
           )}
         </Paper>
+        {mapData && optimalPath && (
+          <AIAnalysisPathSim map={mapData} path={optimalPath} />
+        )}
       </Box>
     </Layout>
   );

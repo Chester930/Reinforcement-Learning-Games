@@ -33,6 +33,7 @@ REWARD_TRAP = -50
 # Q-Table 初始化設定
 OPTIMISTIC_INIT = False  # 是否使用樂觀初始化
 OPTIMISTIC_VALUE = 1.0   # 樂觀初始值
+STRICT_GOAL_REWARD_ZERO = True  # 預設開啟 reward 歸零
 
 
 def load_map(path):
@@ -167,7 +168,7 @@ def save_results(qtable_rows, log_records, output_dir):
         raise ValueError(f'儲存結果時發生錯誤: {str(e)}')
 
 
-def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None):
+def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True):
     """SARSA 主訓練函數"""
     # 設定隨機種子以提高可重現性
     if seed is not None:
@@ -202,7 +203,8 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
         state = pos
         episode_reward = 0
         current_epsilon = get_epsilon(episode, episodes)
-        
+        success = False
+        last_cell = None
         valid_actions = get_valid_actions(map_grid, state)
         # 初始動作選擇
         if np.random.rand() < current_epsilon:
@@ -218,6 +220,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
             cell = map_grid[next_pos[0]][next_pos[1]]
             reward = get_reward(cell)
             episode_reward += reward
+            last_cell = cell
             
             next_valid_actions = get_valid_actions(map_grid, next_pos)
             
@@ -247,16 +250,22 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
                 'reward': reward,
                 'next_state': state_to_str(next_pos),
                 'done': is_terminal(cell),
-                'epsilon': current_epsilon
+                'epsilon': current_epsilon,
+                'success': cell == GOAL
             })
             
             # 修正終止條件：目標或陷阱都終止回合
             if is_terminal(cell) or step == MAX_STEPS:
+                if cell == GOAL:
+                    success = True
                 break
             
             state = next_pos
             action = next_action
         
+        # 最終 reward 歸零判斷
+        if strict_goal_reward_zero and last_cell != GOAL:
+            episode_reward = 0
         episode_rewards.append(episode_reward)
         
         # 每 50 回合顯示進度
@@ -289,6 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default='output', help='輸出目錄')
     parser.add_argument('--seed', type=int, default=None, help='隨機種子（用於可重現性）')
     parser.add_argument('--optimistic', action='store_true', help='使用樂觀初始化')
+    parser.add_argument('--strict_goal_reward_zero', action='store_true', default=True, help='沒到終點時分數歸零（預設開啟）')
     
     args = parser.parse_args()
     
@@ -298,7 +308,7 @@ if __name__ == '__main__':
         print("使用樂觀初始化")
     
     try:
-        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed)
+        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero)
     except Exception as e:
         print(f"訓練過程中發生錯誤: {str(e)}")
         exit(1) 

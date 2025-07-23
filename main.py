@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # 匯入各子 app 的 router
 from map_api import app as map_app
@@ -24,6 +25,7 @@ app.mount('/train', train_app)
 app.mount('/analysis', analysis_app)
 app.mount('/settings', settings_app)
 app.mount('/rules', rules_app)
+app.mount('/jobs', StaticFiles(directory='jobs'), name='jobs')
 
 # 可加一個首頁健康檢查
 @app.get('/')

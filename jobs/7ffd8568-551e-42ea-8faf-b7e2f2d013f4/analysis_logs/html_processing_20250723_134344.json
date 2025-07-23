@@ -1,8 +1,0 @@
-{
-  "timestamp": "20250723_134344",
-  "job_id": "7ffd8568-551e-42ea-8faf-b7e2f2d013f4",
-  "html_source": "ai_generated",
-  "has_html_block": true,
-  "html_content_length": 10248,
-  "html_content_preview": "<!DOCTYPE html>\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習訓練分析報告</title>\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n    <style>\n        :root {\n            --primary-color: #007bff;\n            --secondary-color: #6c757d;\n            --bg-color: #f8f9fa;\n            --card-bg-color: #ffffff;\n            --text-color: #343a40;\n            --heading-color: #1a2533;\n         ..."
-}
