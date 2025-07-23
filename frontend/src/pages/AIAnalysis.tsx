@@ -126,7 +126,7 @@ const AIAnalysis: React.FC = () => {
         // 先嘗試載入分析報告
         try {
           const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
-          if (response.data && reportRes.data.content) {
+          if (reportRes.data && reportRes.data.content) {
             const htmlContent = markdownToHtml(reportRes.data.content);
             setReport(htmlContent);
             setShowReanalyze(true);
