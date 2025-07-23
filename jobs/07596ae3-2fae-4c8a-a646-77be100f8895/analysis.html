@@ -1,164 +1,329 @@
-<h1>強化學習（Q-Learning）訓練分析報告</h1>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化學習訓練分析報告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f7fa;
+            --text-color: #333;
+            --light-text-color: #666;
+            --border-color: #e0e0e0;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+        }
+        header h1 {
+            color: var(--primary-color);
+            margin: 0;
+        }
+        header p {
+            font-size: 1.2em;
+            color: var(--light-text-color);
+        }
+        .report-section {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-color);
+        }
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            background: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%234a90e2" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>') no-repeat left 5px;
+            padding-left: 25px;
+            margin-bottom: 10px;
+        }
+        .chart-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .summary-item {
+            background-color: var(--secondary-color);
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .summary-item .label {
+            font-size: 0.9em;
+            color: var(--light-text-color);
+        }
+        .summary-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .value.positive { color: var(--success-color); }
+        .value.neutral { color: var(--warning-color); }
+        .value.negative { color: var(--danger-color); }
+        
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px auto;
+        }
+        .recommendation {
+            border-left: 4px solid var(--warning-color);
+            padding-left: 15px;
+            background-color: #fffbe6;
+            margin-top: 15px;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .tag {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        .tag.high-priority { background-color: var(--danger-color); }
+        .tag.medium-priority { background-color: var(--warning-color); color: #333;}
+        
+        @media (max-width: 768px) {
+            .chart-container, .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
 
-<h3>報告摘要</h3>
+    <div class="container">
+        <header>
+            <h1>強化學習訓練分析報告</h1>
+            <p>對當前訓練週期的深入評估與改進建議</p>
+        </header>
 
-<p>本次 Q-Learning 訓練在數值上取得了不錯的成績，代理（AI）成功學會了最大化其在環境中獲得的獎勵。然而，深入分析顯示，代理並未學會解決任務的「核心目標」，而是找到了一個環境設計上的「漏洞」——透過在特定高價值狀態間循環移動來累積獎勵，直到回合結束。這導致了高分但無效的策略。本報告將詳細剖析此現象，並提供針對性的改進建議。</p>
+        <section class="report-section">
+            <h2>報告摘要</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="label">總體評分</div>
+                    <div class="value negative">4 / 10</div>
+                </div>
+                 <div class="summary-item">
+                    <div class="label">核心問題</div>
+                    <div class="value negative">獎勵循環</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">實用性</div>
+                    <div class="value negative">極低</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">改進潛力</div>
+                    <div class="value positive">高</div>
+                </div>
+            </div>
+            <p>本次訓練的 AI 代理在初期展現了學習能力，獎勵值有明顯的上升趨勢。然而，分析顯示代理陷入了<strong>次優策略陷阱</strong>，具體表現為在一個高獎勵區域內無限循環，而未能達到最終目標。這導致步數在後期恆定為最大值，表明任務並未真正完成。目前的模型不具備實用性，需要對獎勵函數和訓練策略進行重大調整。</p>
+        </section>
 
-<hr />
+        <section class="report-section">
+            <h2>1. 學習效果評估</h2>
+            <h3>學習曲線分析</h3>
+            <div class="chart-container">
+                <div>
+                    <h4>每回合獎勵 (前20回合)</h4>
+                    <canvas id="rewardChart"></canvas>
+                </div>
+                <div>
+                    <h4>每回合步數 (前20回合)</h4>
+                    <canvas id="stepsChart"></canvas>
+                </div>
+            </div>
+            <ul>
+                <li><strong>獎勵趨勢 (正面訊號)</strong>: 獎勵曲線呈現明顯的上升趨勢。從初期的負獎勵（-45）和低獎勵，快速攀升至800以上，表明 AI 學會了尋找獎勵。</li>
+                <li><strong>步數趨勢 (危險信號)</strong>: 步數在第12回合後穩定在100步（最大值）。這強烈暗示 AI <strong>沒有找到終止狀態</strong>，而是在回合時間耗盡時被強制終止。</li>
+                <li><strong>最終性能</strong>: 最終獎勵 `989` 是一個<strong>虛高的性能指標</strong>，因為它以耗盡 `100` 步為代價，未能反映完成任務的效率。</li>
+                 <li><strong>收斂性判斷</strong>: 策略已收斂到一個<strong>局部最優的循環模式</strong>，而非全局最優策略。</li>
+            </ul>
+        </section>
 
-<h3>1. 學習效果評估</h3>
+        <section class="report-section">
+            <h2>2. 問題診斷</h2>
+            <h3>核心問題：獎勵循環 (Reward Hacking)</h3>
+            <p>AI 發現了一個可以通過循環移動來持續刷分的路徑，而沒有去完成任務的真正目標。這是強化學習中一個典型的陷阱。</p>
+            <ul>
+                <li><strong>路徑證據</strong>: AI 選擇的最優路徑 <code>[(4, 4), (5, 4), (5, 3), (5, 4)]</code> 是一個明確的循環。</li>
+                <li><strong>步數證據</strong>: AI 不斷執行此循環，直到達到每回合100步的上限。</li>
+                <li><strong>Q-Table 證據</strong>: Q-Table 中最高價值的狀態-動作對集中在 <code>(5,x)</code> 和 <code>(4,x)</code> 區域，印證了 AI 認為這是最高價值的「黃金地帶」。</li>
+                <li><strong>根本原因</strong>: 探索與利用失衡，代理過早停止探索，陷入了它發現的第一個高獎勵區域。</li>
+            </ul>
+        </section>
 
-<h4><strong>學習曲線分析</strong></h4>
+        <section class="report-section">
+            <h2>3. 改進建議</h2>
+            <div class="recommendation">
+                <h3>A. 獎勵函數整形 (Reward Shaping) <span class="tag high-priority">最高優先級</span></h3>
+                <p>這是解決問題的根本方法，旨在讓獎勵機制反映真實的任務目標。</p>
+                <ul>
+                    <li><strong>增加步數懲罰</strong>: 為每一步設置小的負獎勵 (如 <code>-0.1</code>) 來鼓勵效率。</li>
+                    <li><strong>設置終點巨額獎勵</strong>: 確保終點獎勵遠高於循環路徑的累積獎勵。</li>
+                    <li><strong>增加狀態訪問懲罰</strong>: 在單個回合內懲罰重複訪問的狀態，以直接打破循環。</li>
+                </ul>
+            </div>
+            <div class="recommendation" style="border-color: #28a745; background-color: #e9f5ec;">
+                <h3>B. 參數與策略調整 <span class="tag medium-priority">輔助手段</span></h3>
+                 <p>這些調整能幫助代理更好地探索環境，發現更優的策略。</p>
+                 <ul>
+                    <li><strong>減緩探索率 (Epsilon) 衰減</strong>: 給予 AI 更多探索的機會，以跳出局部最優。</li>
+                    <li><strong>增加訓練回合數</strong>: 將回合數從100增加到至少 <strong>1000-5000</strong>，給予充分的學習時間。</li>
+                    <li><strong>適度降低折扣因子 (Gamma)</strong>: 可嘗試從 <code>0.99</code> 降至 <code>0.9</code>，使代理更關注短期回報，可能有助於選擇更直接的路徑。</li>
+                 </ul>
+            </div>
+        </section>
 
-<ul>
-<li><p><strong>獎勵趨勢 (Reward)</strong>: 學習曲線呈現明顯的 <strong>三階段模式</strong>：</p>
+        <section class="report-section">
+            <h2>4. 算法特性分析</h2>
+            <h3>推斷算法：Q-Learning (或類似表格型方法)</h3>
+            <p>基於提供的 Q-Table 數據，可以推斷使用的是一種表格型強化學習算法，適用於離散、有限的狀態和動作空間。</p>
+            <ul>
+                <li><strong>優點</strong>: 可解釋性強（可直接查看 Q-Table）、實現簡單、有理論收斂保證。</li>
+                <li><strong>缺點</strong>: 存在維度詛咒，不適用於複雜環境；對超參數敏感；如本例所示，容易陷入局部最優。</li>
+            </ul>
+        </section>
 
-<ol>
-<li><strong>初期探索 (約 1-8 回合)</strong>: 獎勵低且不穩定，甚至出現負值（-45），步數也較少。這表明 AI 正在隨機探索，並頻繁觸發懲罰（例如掉入陷阱、撞牆等導致回合提前結束的事件）。</li>
-<li><strong>學習突破 (約 9-13 回合)</strong>: 獎勵從 <code>120</code> 迅速躍升至 <code>659</code>。AI 在此階段發現了高獎勵區域，並開始學習如何穩定地獲取獎勵。</li>
-<li><strong>收斂與利用 (約 14 回合後)</strong>: 獎勵穩定在 <code>700-800+</code> 的高水平，步數也穩定在 <code>100</code> 步。這表明 AI 已經鎖定了一套其認為最優的策略，並持續利用該策略。</li>
-</ol></li>
-<li><p><strong>步數趨勢 (Steps)</strong>: 步數的變化與獎勵趨勢高度相關。初期步數低，對應著提前結束的失敗回合。在學習突破後，步數迅速達到 <code>100</code> 步的上限並保持穩定，這意味著 AI 學會了 <strong>「存活」</strong>，避免了所有會導致回合提前結束的懲罰。</p></li>
-</ul>
+        <section class="report-section">
+            <h2>5. 總結與評分</h2>
+            <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
+                <div style="flex-shrink: 0;">
+                     <div class="score-circle">4</div>
+                </div>
+                <div style="flex-grow: 1;">
+                    <h3>評分理由</h3>
+                    <p><strong>(+)</strong> AI 成功學會了基本的價值評估，能夠識別高獎勵區域。<br/>
+                       <strong>(-)</strong> AI 未能理解任務的真正目標，陷入了嚴重的獎勵循環陷阱，導致策略完全無效。</p>
+                    <h3>實用性評估</h3>
+                    <p>在當前狀態下，模型<strong>毫無實用性</strong>。但如果采納改進建議，有很大潛力學會正確的、高效的最優路徑，從而變得實用。</p>
+                </div>
+            </div>
+        </section>
 
-<h4><strong>策略與收斂評估</strong></h4>
+    </div>
 
-<ul>
-<li><strong>策略有效性</strong>: 從「最大化得分」的角度看，AI 成功學習到了有效策略。它持續獲得高額獎勵，達到了訓練數據中的最高分。</li>
-<li><strong>收斂狀態</strong>: 訓練在第 14 回合後已基本 <strong>收斂</strong>。後續的獎勵和步數波動很小，表明 Q-Table 的關鍵部分已經穩定，AI 的行為模式已被固定。然而，這是一種 <strong>局部最優收斂</strong>，而非全局最優。</li>
-</ul>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rewardData = [241, 44, 81, 52, 110, 140, -45, 120, 402, 560, 363, 560, 659, 747, 703, 758, 747, 802, 835, 780];
+            const stepsData = [100, 17, 35, 31, 39, 53, 7, 29, 99, 100, 61, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+            const labels = Array.from({ length: 20 }, (_, i) => `Ep ${i + 1}`);
 
-<h4><strong>最終性能表現</strong></h4>
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: '#e0e0e0' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            };
 
-<ul>
-<li><strong>數值表現</strong>: 最終獎勵 <code>989</code> 和平均獎勵 <code>832.6</code> 非常高，顯示 AI 在當前環境規則下表現出色。</li>
-<li><strong>質量表現</strong>: 儘管分數高，但策略質量很低。AI 沒有完成任務（如找到出口），而是在原地打轉刷分。</li>
-</ul>
+            // Reward Chart
+            const rewardCtx = document.getElementById('rewardChart').getContext('2d');
+            new Chart(rewardCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Reward',
+                        data: rewardData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
 
-<hr />
+            // Steps Chart
+            const stepsCtx = document.getElementById('stepsChart').getContext('2d');
+            new Chart(stepsCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Steps',
+                        data: stepsData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: { ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, min: 0, max: 110 } } }
+            });
+        });
+    </script>
 
-<h3>2. 問題診斷</h3>
-
-<h4><strong>核心問題：獎勵駭客 (Reward Hacking) 與策略循環</strong></h4>
-
-<ul>
-<li><strong>最優路徑分析</strong>: <code>[(4, 4), (5, 4), (5, 3), (5, 4)]</code> 這條路徑揭示了根本問題。AI 進入 <code>(5, 4)</code> 後，會移動到 <code>(5, 3)</code>，然後再移回 <code>(5, 4)</code>，形成一個 <strong>無限循環</strong>。</li>
-<li><strong>原因</strong>: 這種行為模式的出現，是因為環境的獎勵機制存在漏洞。AI 發現，在 <code>(5,3)</code> 和 <code>(5,4)</code> 之間來回移動，每步都能獲得正獎勵，且沒有任何負面後果。由於沒有為「達成最終目標」設置一個遠大於步進獎勵的終點獎勵，AI 的最優解就變成了「在時間耗盡前，盡可能多地執行這些高回報的動作」。</li>
-<li><strong>與數據的關聯</strong>: 這完美解釋了為何步數總是達到 <code>100</code>。AI 並非在探索，而是在一個小區域內執行循環動作，直到達到回合的最大步數限制。</li>
-</ul>
-
-<h4><strong>Q-Table 分析</strong></h4>
-
-<ul>
-<li><strong>價值分佈</strong>: Q-Table 的價值分佈是合理的，它準確地反映了環境的（有缺陷的）獎勵結構。<code>(5,3)</code> 和 <code>(5,4)</code> 附近的狀態-動作對具有極高的 Q 值（接近 <code>200</code>），這正是 AI 學習到的結果。Q-Table 本身沒有問題，問題出在它所學習的環境。</li>
-</ul>
-
-<h4><strong>過擬合/欠擬合</strong></h4>
-
-<ul>
-<li>這不是典型的過擬合或欠擬合。可以稱之為 <strong>「對環境規則的過度擬合」</strong>。AI 精確地學習了如何利用規則來最大化分數，但這個規則本身並不能引導 AI 達成我們期望的最終目標。</li>
-</ul>
-
-<hr />
-
-<h3>3. 改進建議</h3>
-
-<h4><strong>首要任務：修正環境與獎勵函數</strong></h4>
-
-<p>這是解決問題的根本方法。
-1.  <strong>設置明確的終點獎勵</strong>: 為成功到達目標狀態的動作設置一個非常大的正獎勵（例如 <code>+1000</code>）。這個獎勵必須遠高於 AI 透過循環可能累積的總獎勵。
-2.  <strong>引入步數懲罰 (Step Penalty)</strong>: 為 AI 執行的每一步都施加一個小的負獎勵（例如 <code>-0.1</code>）。這會激勵 AI 尋找 <strong>最短路徑</strong> 到達終點，而不是拖延時間。
-3.  <strong>移除循環獎勵</strong>: 檢查狀態 <code>(5,3)</code> 和 <code>(5,4)</code> 的獎勵機制。確保在這些狀態之間移動不會產生持續的正獎勵。獎勵應該給予「進展」，而非「存在」。</p>
-
-<h4><strong>參數調整建議（在修正環境後）</strong></h4>
-
-<ol>
-<li><strong>探索率 (Epsilon, ε)</strong>:
-<ul>
-<li><strong>問題</strong>: 當前的探索策略可能過早地停止了探索，導致 AI 在發現「獎勵循環」這個局部最優解後，便不再尋找真正的終點。</li>
-<li><strong>建議</strong>: 使用更緩慢的 <strong>ε-衰減策略</strong>。確保在更多回合中保持一定的探索率，給予 AI 更多機會跳出局部最優，去發現那個被忽略的、但價值更高的終點。</li>
-</ul></li>
-<li><strong>學習率 (Alpha, α)</strong>:
-<ul>
-<li><strong>建議</strong>: 保持一個中等偏高的初始學習率（如 <code>0.5</code>），並隨著訓練進行而 <strong>衰減</strong>。早期快速學習，後期穩定收斂。</li>
-</ul></li>
-<li><strong>折扣因子 (Gamma, γ)</strong>:
-<ul>
-<li><strong>分析</strong>: 當前的 γ 似乎較高（接近 <code>1</code>），這有助於將終點的價值反向傳播。在修正了終點獎勵後，高 γ 值是合適的。無需大改。</li>
-</ul></li>
-</ol>
-
-<h4><strong>訓練策略優化</strong></h4>
-
-<ol>
-<li><strong>增加訓練回合數</strong>: <code>100</code> 回合對於多數強化學習問題來說太少了。在修正環境後，建議將訓練回合數增加到 <strong>至少 1000-5000 回合</strong>，以確保 AI 有足夠的時間進行充分的探索和收斂。</li>
-</ol>
-
-<hr />
-
-<h3>4. 算法特性分析</h3>
-
-<h4><strong>Q-Learning 的優缺點</strong></h4>
-
-<ul>
-<li><strong>優點</strong>:
-<ul>
-<li><strong>簡單直觀</strong>: 算法原理清晰，易於實現，是入門強化學習的絕佳選擇。</li>
-<li><strong>離策略 (Off-policy)</strong>: Q-Learning 可以從過去的經驗（甚至是隨機策略產生的經驗）中學習最優策略，這使得經驗回放（Experience Replay）等技術可以被應用，提高了數據利用效率。</li>
-<li><strong>確定性</strong>: 在給定相同的 Q-Table 時，其策略是確定的。</li>
-</ul></li>
-<li><strong>缺點</strong>:
-<ul>
-<li><strong>維度詛咒</strong>: 需要用表格（Q-Table）存儲每個狀態-動作對的價值，當狀態空間或動作空間巨大時，會導致內存爆炸和計算效率低下。</li>
-<li><strong>收斂速度</strong>: 在複雜問題中可能收斂較慢。</li>
-<li><strong>對局部最優敏感</strong>: 正如本次分析所見，其貪心策略容易陷入局部最優解。</li>
-</ul></li>
-</ul>
-
-<h4><strong>與其他算法的比較</strong></h4>
-
-<ul>
-<li><strong>SARSA (On-policy)</strong>:
-<ul>
-<li><strong>對比</strong>: SARSA 是同策略（On-policy）算法，它評估和改進的是當前正在執行的策略。它會考慮到探索步驟（ε-greedy）可能帶來的影響，因此通常比 Q-Learning 更「保守」。</li>
-<li><strong>適用場景</strong>: 在需要考慮探索風險的場景下（如機器人行走，錯誤一步代價很高），SARSA 可能是更安全的選擇。它可能不會像 Q-Learning 那樣輕易地利用環境漏洞。</li>
-</ul></li>
-<li><strong>深度Q網絡 (DQN)</strong>:
-<ul>
-<li><strong>對比</strong>: DQN 使用神經網絡來近似 Q 函數，而不是使用表格。</li>
-<li><strong>適用場景</strong>: 解決了 Q-Learning 的維度詛咒問題，適用於具有高維狀態空間（如圖像輸入）的複雜問題。對於當前這個小規模的網格世界問題，DQN 有些大材小用。</li>
-</ul></li>
-<li><strong>策略梯度 (Policy Gradient, e.g., REINFORCE, A2C)</strong>:
-<ul>
-<li><strong>對比</strong>: 這類算法直接學習一個策略函數 π(a|s)，即在狀態 s 下採取動作 a 的概率，而不是學習價值函數。</li>
-<li><strong>適用場景</strong>: 特別適用於連續動作空間或需要隨機策略的場景。</li>
-</ul></li>
-</ul>
-
-<hr />
-
-<h3>5. 總結與評分</h3>
-
-<h4><strong>整體訓練效果評分：6 / 10</strong></h4>
-
-<ul>
-<li><strong>得分理由 (6分)</strong>:
-<ul>
-<li><strong>正面</strong>: 算法本身成功運行並收斂。AI 在給定的（有缺陷的）規則下，非常有效地找到了最大化分數的方法。這證明了 Q-Learning 算法的學習能力。</li>
-<li><strong>扣分理由 (-4分)</strong>: 學習到的策略是無效的，完全沒有解決問題的初衷。核心問題在於環境設計，而非算法實現。最終結果不具備實用性。</li>
-</ul></li>
-</ul>
-
-<h4><strong>主要成就與問題總結</strong></h4>
-
-<ul>
-<li><strong>主要成就</strong>: AI 學會了如何「生存」並穩定地獲取高分。</li>
-<li><strong>主要問題</strong>: AI 陷入了由獎勵函數缺陷導致的「策略循環」，未能學習到通往最終目標的有效路徑。</li>
-</ul>
-
-<h4><strong>實用性評估</strong></h4>
-
-<ul>
-<li><strong>當前狀態</strong>: 當前模型 <strong>不具備實用性</strong>。如果部署在真實環境中，它只會在一個小區域內重複無效動作。</li>
-<li><strong>改進後潛力</strong>: 在採納了 <strong>第 3 節</strong> 的改進建議（特別是修正獎勵函數）後，Q-Learning 算法完全有潛力在該問題上學習到正確且高效的策略，從而變得具備實用價值。</li>
-</ul>
+</body>
+</html>

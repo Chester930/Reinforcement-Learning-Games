@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # 使用非交互式後端，避免GUI問題
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import JSONResponse
 import os
@@ -10,11 +12,12 @@ import json
 import re
 import requests
 import markdown2
+from datetime import datetime
 
 app = FastAPI()
 JOBS_DIR = 'jobs'
 
-@app.get('/analysis/{job_id}/curve')
+@app.get('/{job_id}/curve')
 def get_learning_curve(job_id: str):
     log_path = os.path.join(JOBS_DIR, job_id, 'log.csv')
     if not os.path.exists(log_path):
@@ -24,7 +27,7 @@ def get_learning_curve(job_id: str):
     steps = df.groupby('episode')['step'].max().tolist()
     return {"rewards": rewards, "steps": steps}
 
-@app.get('/analysis/{job_id}/heatmap')
+@app.get('/{job_id}/heatmap')
 def get_qtable_heatmap(job_id: str):
     qtable_path = os.path.join(JOBS_DIR, job_id, 'q_table.csv')
     if not os.path.exists(qtable_path):
@@ -48,7 +51,7 @@ def get_qtable_heatmap(job_id: str):
     heatmap_png_base64 = base64.b64encode(buf.read()).decode('utf-8')
     return {"heatmap_png_base64": heatmap_png_base64}
 
-@app.get('/analysis/{job_id}/optimal-path')
+@app.get('/{job_id}/optimal-path')
 def get_optimal_path(job_id: str):
     qtable_path = os.path.join(JOBS_DIR, job_id, 'q_table.csv')
     map_path = os.path.join(JOBS_DIR, job_id, 'map.json')
@@ -118,7 +121,8 @@ def get_optimal_path(job_id: str):
             elif cell == 'T':
                 plt.text(j, i, '🕳️', ha='center', va='center', fontsize=15)
             elif cell == '1':
-                plt.text(j, i, '🪨', ha='center', va='center', fontsize=15)
+                plt.text(j, i, '🪨', ha='center', 
+                va='center', fontsize=15)
             else:
                 plt.text(j, i, '·', ha='center', va='center', fontsize=10, color='lightgray')
     
@@ -127,7 +131,7 @@ def get_optimal_path(job_id: str):
         path_x = [p[1] for p in path]
         path_y = [p[0] for p in path]
         plt.plot(path_x, path_y, 'r-', linewidth=3, alpha=0.7, label='Optimal Path')
-        plt.scatter(path_x, path_y, c='red', s=50, alpha=0.7)
+        plt.scatter(path_x, path_y, color='red', s=50, alpha=0.7, marker='o')  # 避免 colorbar/sci 問題
     
     plt.grid(True, alpha=0.3)
     plt.legend()
@@ -285,19 +289,49 @@ def build_analysis_prompt(job_id, user_prompt):
 請以結構化的方式呈現分析結果，使用清晰的標題和要點，並同時輸出 markdown 與 html 版本。"""
     return prompt
 
-@app.post('/analysis/{job_id}/analyze-and-save')
+@app.post('/{job_id}/analyze-and-save')
 def analyze_and_save(job_id: str, user_prompt: str = Body(..., embed=True)):
     job_dir = os.path.join(JOBS_DIR, job_id)
     if not os.path.exists(job_dir):
         raise HTTPException(status_code=404, detail='Job not found')
+    
+    # 創建分析記錄目錄
+    analysis_log_dir = os.path.join(job_dir, 'analysis_logs')
+    os.makedirs(analysis_log_dir, exist_ok=True)
+    
+    # 生成時間戳
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
     # 讀取 AI 設定
     with open('settings.json', 'r', encoding='utf-8') as f:
         settings = json.load(f)
     system_prompt = settings.get('system_prompt', '')
     api_key = settings.get('api_key', '')
     model_name = settings.get('model_name', '')
+    
     # 自動合併 prompt
     prompt = build_analysis_prompt(job_id, user_prompt)
+    
+    # 記錄完整的請求信息
+    request_log = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'user_prompt': user_prompt,
+        'system_prompt': system_prompt,
+        'model_name': model_name,
+        'full_prompt': system_prompt + "\n" + prompt,
+        'request_data': {
+            "contents": [
+                {"role": "user", "parts": [{"text": system_prompt + "\n" + prompt}]}
+            ]
+        }
+    }
+    
+    # 儲存請求記錄
+    request_log_path = os.path.join(analysis_log_dir, f'request_{timestamp}.json')
+    with open(request_log_path, 'w', encoding='utf-8') as f:
+        json.dump(request_log, f, ensure_ascii=False, indent=2)
+    
     # 呼叫 Gemini API
     url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}'
     headers = {'Content-Type': 'application/json'}
@@ -306,32 +340,136 @@ def analyze_and_save(job_id: str, user_prompt: str = Body(..., embed=True)):
             {"role": "user", "parts": [{"text": system_prompt + "\n" + prompt}]}
         ]
     }
+    
     resp = requests.post(url, headers=headers, json=data)
+    
+    # 記錄API響應
+    response_log = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'status_code': resp.status_code,
+        'response_headers': dict(resp.headers),
+        'response_text': resp.text,
+        'success': resp.status_code == 200
+    }
+    
+    # 儲存響應記錄
+    response_log_path = os.path.join(analysis_log_dir, f'response_{timestamp}.json')
+    with open(response_log_path, 'w', encoding='utf-8') as f:
+        json.dump(response_log, f, ensure_ascii=False, indent=2)
+    
     if resp.status_code != 200:
         raise HTTPException(status_code=500, detail=f'Gemini API error: {resp.text}')
+    
     gemini_content = resp.json()['candidates'][0]['content']['parts'][0]['text']
-    # 儲存 .md
+    
+    # 記錄原始AI回覆
+    raw_response_log = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'raw_ai_response': gemini_content,
+        'response_length': len(gemini_content)
+    }
+    
+    # 儲存原始回覆記錄
+    raw_response_log_path = os.path.join(analysis_log_dir, f'raw_response_{timestamp}.json')
+    with open(raw_response_log_path, 'w', encoding='utf-8') as f:
+        json.dump(raw_response_log, f, ensure_ascii=False, indent=2)
+    
+    # 儲存原始AI回覆為文本文件
+    raw_response_text_path = os.path.join(analysis_log_dir, f'raw_response_{timestamp}.txt')
+    with open(raw_response_text_path, 'w', encoding='utf-8') as f:
+        f.write(gemini_content)
+    
+    # 處理 markdown 內容
     md_match = re.search(r"```markdown\s*([\s\S]+?)```", gemini_content)
     md_content = md_match.group(1).strip() if md_match else gemini_content
+    
+    # 記錄 markdown 處理過程
+    md_processing_log = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'has_markdown_block': md_match is not None,
+        'markdown_content_length': len(md_content),
+        'markdown_content_preview': md_content[:500] + '...' if len(md_content) > 500 else md_content
+    }
+    
+    # 儲存 markdown 處理記錄
+    md_processing_log_path = os.path.join(analysis_log_dir, f'md_processing_{timestamp}.json')
+    with open(md_processing_log_path, 'w', encoding='utf-8') as f:
+        json.dump(md_processing_log, f, ensure_ascii=False, indent=2)
+    
+    # 儲存 .md
     md_path = os.path.join(job_dir, 'analysis.md')
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
-    # 儲存 .html
+    
+    # 處理 HTML 內容
     html_match = re.search(r"```html\s*([\s\S]+?)```", gemini_content)
     if html_match:
         html_content = html_match.group(1).strip()
+        html_source = 'ai_generated'
     else:
         html_content = markdown2.markdown(md_content)
+        html_source = 'markdown_converted'
+    
+    # 記錄 HTML 處理過程
+    html_processing_log = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'html_source': html_source,
+        'has_html_block': html_match is not None,
+        'html_content_length': len(html_content),
+        'html_content_preview': html_content[:500] + '...' if len(html_content) > 500 else html_content
+    }
+    
+    # 儲存 HTML 處理記錄
+    html_processing_log_path = os.path.join(analysis_log_dir, f'html_processing_{timestamp}.json')
+    with open(html_processing_log_path, 'w', encoding='utf-8') as f:
+        json.dump(html_processing_log, f, ensure_ascii=False, indent=2)
+    
+    # 儲存 .html
     html_path = os.path.join(job_dir, 'analysis.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
+    
+    # 創建分析摘要記錄
+    analysis_summary = {
+        'timestamp': timestamp,
+        'job_id': job_id,
+        'user_prompt': user_prompt,
+        'analysis_files_created': {
+            'analysis.md': os.path.exists(md_path),
+            'analysis.html': os.path.exists(html_path),
+            'request_log': os.path.exists(request_log_path),
+            'response_log': os.path.exists(response_log_path),
+            'raw_response_log': os.path.exists(raw_response_log_path),
+            'raw_response_text': os.path.exists(raw_response_text_path),
+            'md_processing_log': os.path.exists(md_processing_log_path),
+            'html_processing_log': os.path.exists(html_processing_log_path)
+        },
+        'content_stats': {
+            'raw_response_length': len(gemini_content),
+            'markdown_length': len(md_content),
+            'html_length': len(html_content),
+            'html_source': html_source
+        }
+    }
+    
+    # 儲存分析摘要
+    summary_log_path = os.path.join(analysis_log_dir, f'analysis_summary_{timestamp}.json')
+    with open(summary_log_path, 'w', encoding='utf-8') as f:
+        json.dump(analysis_summary, f, ensure_ascii=False, indent=2)
+    
     return {"message": "Analysis saved.", "md": md_content, "html": html_content}
 
-@app.get('/analysis/{job_id}/report')
+@app.get('/{job_id}/report')
 def get_analysis_report(job_id: str):
     report_path = os.path.join(JOBS_DIR, job_id, 'analysis.md')
     if not os.path.exists(report_path):
         raise HTTPException(status_code=404, detail='Analysis report not found')
     with open(report_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    return {"content": content} 
+    return {"content": content}
+
+ 

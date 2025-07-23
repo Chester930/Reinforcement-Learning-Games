@@ -545,7 +545,7 @@ const MapManagement: React.FC = () => {
                   <ListItemText 
                     primary={rule.name} 
                     secondary={
-                      <Box>
+                      <>
                         <Typography variant="body2" sx={{ color: '#666' }}>
                           🎮 遊戲：獎勵 {rule.goalReward || 100}，陷阱 {rule.trapPenalty || -20}，步數衰減 {rule.stepDecay || 0.99}
                         </Typography>
@@ -554,7 +554,7 @@ const MapManagement: React.FC = () => {
                           {rule.seed && `，種子 ${rule.seed}`}
                           {rule.optimistic && '，樂觀初始化'}
                         </Typography>
-                      </Box>
+                      </>
                     }
                   />
                 </ListItem>

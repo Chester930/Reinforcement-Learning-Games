@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化學習訓練分析報告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --bg-color: #f8f9fa;
+            --card-bg-color: #ffffff;
+            --text-color: #333;
+            --heading-color: #003366;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 960px;
+            margin: auto;
+            background: var(--card-bg-color);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        h1, h2, h3 {
+            color: var(--heading-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        .summary {
+            background-color: #e9f5ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .summary p {
+            margin: 5px 0;
+        }
+        .summary strong {
+            color: var(--heading-color);
+        }
+        .score {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            background: #fdfdfd;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            position: relative;
+            padding-left: 30px;
+        }
+        li::before {
+            content: '✓';
+            position: absolute;
+            left: 10px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .problem li::before {
+            content: '✗';
+            color: #dc3545;
+        }
+        .suggestion li::before {
+            content: '💡';
+            color: #ffc107;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: #e9ecef;
+            color: var(--heading-color);
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+            h1 { font-size: 2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>強化學習訓練分析報告</h1>
+
+        <div class="summary section">
+            <h3>報告摘要</h3>
+            <p><strong>分析顧問:</strong> AI 強化學習分析顧問</p>
+            <p><strong>日期:</strong> 2023年10月27日</p>
+            <p><strong>總體評分:</strong> <span class="score">5.5 / 10</span></p>
+            <p><strong>核心結論:</strong> AI 代理 (Agent) 已初步學會尋找獎勵的策略，學習趨勢向好。然而，訓練<strong>尚未收斂</strong>，且代理陷入了一個<strong>次優的策略循環 (Suboptimal Policy Loop)</strong> 中，導致效率低下。當前模型不具備實用性，但有明確的改進方向和巨大潛力。</p>
+        </div>
+
+        <div class="section">
+            <h2>1. 學習效果評估</h2>
+            <h3>1.1 學習曲線分析</h3>
+            <div style="height: 400px; margin-bottom: 30px;">
+                <canvas id="learningCurveChart"></canvas>
+            </div>
+            <ul>
+                <li><strong>獎勵趨勢 (Reward Trend):</strong> 整體呈上升趨勢。早期獎勵值波動劇烈，這在探索階段正常。後期平均獎勵 `288.6` 和最終獎勵 `428` 表明代理已學會穩定獲取獎勵。</li>
+                <li><strong>步數趨勢 (Step Trend):</strong> 整體呈下降趨勢，但存在問題。平均步數 `78.9` 偏高，而<strong>最終步數為 100</strong>，這通常意味著代理在最後一回合達到了步數上限而超時，並未主動結束。這是一個危險信號，表明策略存在嚴重效率問題。</li>
+            </ul>
+            <h3>1.2 策略有效性與收斂評估</h3>
+            <ul>
+                <li><strong>是否學到有效策略?:</strong> <strong>部分有效</strong>。代理學會了如何接近並維持在高獎勵區域，但未能學會如何以最有效的方式達成目標或結束回合。</li>
+                <li class="problem"><strong>是否收斂?:</strong> <strong>明確未收斂</strong>。主要證據有三：
+                    <ol>
+                        <li><strong>最終回合超時</strong>：最終步數達到上限 100。</li>
+                        <li><strong>最優路徑循環</strong>：AI 選擇的路徑在 `(0,3)` 和 `(0,2)` 之間來回移動。</li>
+                        <li><strong>Q-Table 數值接近</strong>：頂級 Q 值非常接近，表明模型對不同動作的價值區分度不高。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>2. 問題診斷</h2>
+            <ul class="problem">
+                <li><strong>主要問題：次優策略循環 (Suboptimal Policy Loop)</strong><br>
+                代理在狀態 `(0,2)` 和 `(0,3)` 之間震盪，貪圖眼前的小利而忽略了長遠的全局最優解。
+                <pre><code>最優路徑: [(1, 0), ..., (0, 2), (0, 3), (0, 2)] <-- 循環點</code></pre>
+                </li>
+                <li><strong>可能原因:</strong>
+                    <ul>
+                        <li>獎勵函數設計缺陷 (Flawed Reward Structure)</li>
+                        <li>探索不足 (Insufficient Exploration)，`epsilon` 衰減過快。</li>
+                        <li>折扣因子 (`gamma`) 設置不當。</li>
+                    </ul>
+                </li>
+                <li><strong>Q-Table 學習質量:</strong> Q-Table 顯示出價值分佈，但價值觀的「平坦化」和最終的循環策略證明 Q-Table 尚未準確反映真實價值。</li>
+                <li><strong>過擬合與欠擬合:</strong> 當前模型處於<strong>欠擬合 (Underfitting)</strong> 或<strong>早熟收斂 (Premature Convergence)</strong> 狀態。</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>3. 改進建議</h2>
+            <ul class="suggestion">
+                <li><strong>參數調整:</strong>
+                    <ol>
+                        <li><strong>探索率 (`epsilon`):</strong> 減緩衰減速度，增加探索時間。</li>
+                        <li><strong>折扣因子 (`gamma`):</strong> 適度降低 `gamma` (如 0.95)，讓代理更注重效率。</li>
+                        <li><strong>學習率 (`alpha`):</strong> 在訓練後期適當降低，或使用自適應衰減。</li>
+                    </ol>
+                </li>
+                <li><strong>訓練策略優化:</strong>
+                    <ol>
+                        <li><strong>增加訓練回合數:</strong> 建議增加到 **1000-5000 回合**。</li>
+                        <li><strong>獎勵重塑 (Reward Shaping):</strong> 增加步數懲罰 (如 `-0.05`/步)，激勵代理走最短路徑。</li>
+                    </ol>
+                </li>
+                 <li><strong>環境調整:</strong> 暫時增加每回合最大步數，觀察代理能否跳出循環。</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>4. 算法特性分析 (推斷為 Q-Learning)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>特性</th>
+                        <th>分析</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>優點</strong></td>
+                        <td>簡單直觀，易於實現；離策略 (Off-Policy)，數據利用率高。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>缺點</strong></td>
+                        <td>存在維度詛咒，不適用於大狀態空間；收斂速度可能較慢。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>適用場景</strong></td>
+                        <td>非常適用於離散、有限的狀態/動作空間（如迷宮、棋盤格世界）。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>算法選擇建議</strong></td>
+                        <td>當前繼續使用 Q-Learning 並優化是合理的。未來可考慮遷移到 DQN。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>5. 總結與評分</h2>
+            <ul>
+                <li><strong>整體訓練效果評分:</strong> <span class="score">5.5 / 10</span></li>
+                <li><strong>主要成就:</strong> 驗證了代理的學習能力，並識別出高價值區域。</li>
+                <li class="problem"><strong>主要問題:</strong> 策略陷入次優循環，訓練不充分導致模型欠擬合。</li>
+                <li><strong>實用性評估:</strong> 當前狀態下實用性為零，但改進後潛力巨大。</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('learningCurveChart').getContext('2d');
+        
+        const rewardData = [-25, 146, -43, -28, -52, -30, -1, -36, -27, -28, -19, 40, 2, -21, 22, -50, -25, 186, -35, 59];
+        const stepData = [53, 69, 16, 12, 36, 14, 40, 20, 22, 12, 36, 32, 26, 38, 28, 12, 20, 100, 8, 46];
+        const labels = Array.from({length: 20}, (_, i) => `回合 ${i + 1}`);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '回合獎勵 (Reward)',
+                        data: rewardData,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.1
+                    },
+                    {
+                        label: '回合步數 (Steps)',
+                        data: stepData,
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                stacked: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '學習曲線 (前20回合)',
+                        font: { size: 18 }
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '獎勵'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '步數'
+                        },
+                        grid: {
+                            drawOnChartArea: false, // only draw grid for first Y axis
+                        },
+                    },
+                    x: {
+                         title: {
+                            display: true,
+                            text: '回合數'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

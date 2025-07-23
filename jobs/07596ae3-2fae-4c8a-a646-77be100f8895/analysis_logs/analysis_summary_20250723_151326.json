@@ -1,0 +1,21 @@
+{
+  "timestamp": "20250723_151326",
+  "job_id": "07596ae3-2fae-4c8a-a646-77be100f8895",
+  "user_prompt": "請分析這個強化學習訓練結果",
+  "analysis_files_created": {
+    "analysis.md": true,
+    "analysis.html": true,
+    "request_log": true,
+    "response_log": true,
+    "raw_response_log": true,
+    "raw_response_text": true,
+    "md_processing_log": true,
+    "html_processing_log": true
+  },
+  "content_stats": {
+    "raw_response_length": 15911,
+    "markdown_length": 15911,
+    "html_length": 12418,
+    "html_source": "ai_generated"
+  }
+}

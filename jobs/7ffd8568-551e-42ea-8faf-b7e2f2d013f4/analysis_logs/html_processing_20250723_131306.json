@@ -1,0 +1,8 @@
+{
+  "timestamp": "20250723_131306",
+  "job_id": "7ffd8568-551e-42ea-8faf-b7e2f2d013f4",
+  "html_source": "ai_generated",
+  "has_html_block": true,
+  "html_content_length": 10539,
+  "html_content_preview": "<!DOCTYPE html>\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習 (SARSA) 訓練分析報告</title>\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n    <style>\n        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');\n        body {\n            font-family: 'Noto Sans TC', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;\n            line-he..."
+}

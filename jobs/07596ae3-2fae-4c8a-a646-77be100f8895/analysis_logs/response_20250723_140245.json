@@ -1,0 +1,20 @@
+{
+  "timestamp": "20250723_140245",
+  "job_id": "07596ae3-2fae-4c8a-a646-77be100f8895",
+  "status_code": 503,
+  "response_headers": {
+    "Vary": "Origin, X-Origin, Referer",
+    "Content-Type": "application/json; charset=UTF-8",
+    "Content-Encoding": "gzip",
+    "Date": "Wed, 23 Jul 2025 06:03:32 GMT",
+    "Server": "scaffolding on HTTPServer2",
+    "X-XSS-Protection": "0",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-Content-Type-Options": "nosniff",
+    "Server-Timing": "gfet4t7; dur=47785",
+    "Alt-Svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+    "Transfer-Encoding": "chunked"
+  },
+  "response_text": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"The model is overloaded. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+  "success": false
+}
