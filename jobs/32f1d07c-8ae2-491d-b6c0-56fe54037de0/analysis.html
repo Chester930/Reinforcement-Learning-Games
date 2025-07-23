@@ -1,463 +1,354 @@
-<p>好的，身為您的強化學習專業分析顧問，我將根據您提供的訓練數據，進行深入分析，並提供一份包含學習效果評估、問題診斷、改進建議、算法分析及總結評分的完整報告。</p>
-
-<p>報告將同時以 Markdown 和 HTML 兩種格式呈現。</p>
-
-<hr />
-
-<h3>HTML 格式報告</h3>
-
-<p><!DOCTYPE html></p>
-
-<html lang="zh-TW">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>強化學習訓練分析報告</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.8;
             background-color: #f8f9fa;
             color: #343a40;
             margin: 0;
             padding: 20px;
         }
+
         .container {
-            max-width: 900px;
+            max-width: 960px;
             margin: auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            overflow: hidden;
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
+
         header {
-            background-color: #007bff;
-            color: #ffffff;
-            padding: 25px 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
             text-align: center;
         }
-        header h1 {
-            margin: 0;
-            font-size: 2em;
-        }
-        header p {
-            margin: 5px 0 0;
-            opacity: 0.9;
-        }
-        .content {
-            padding: 20px 30px;
-        }
-        h2 {
-            color: #0056b3;
-            border-bottom: 2px solid #dee2e6;
-            padding-bottom: 10px;
-            margin-top: 30px;
-        }
-        h3 {
-            color: #17a2b8;
-            margin-top: 25px;
-        }
-        .card {
-            background: #e9ecef;
-            border-left: 5px solid #17a2b8;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .card-summary {
-             border-left-color: #28a745;
-        }
-        ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        li::before {
-            content: "•";
+
+        h1 {
             color: #007bff;
-            font-weight: bold;
-            display: inline-block;
-            width: 1em;
-            margin-left: -1em;
+            font-size: 2.5rem;
+            margin: 0;
         }
-        .score-box {
-            text-align: center;
-            padding: 25px;
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: white;
+
+        h2 {
+            color: #17a2b8;
+            border-left: 5px solid #17a2b8;
+            padding-left: 1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            color: #28a745;
+            margin-top: 2rem;
+            font-size: 1.4rem;
+        }
+        
+        .summary-block {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 1.5rem;
             border-radius: 8px;
-            margin-top: 20px;
+            margin-bottom: 2rem;
         }
-        .score-box .score {
-            font-size: 3.5em;
-            font-weight: 700;
-            margin: 10px 0;
+
+        .summary-block p {
+            margin: 0.5rem 0;
         }
-        .score-box .score-desc {
-            font-size: 1.2em;
+
+        .summary-block strong {
+            color: #0056b3;
         }
-        .chart-container {
-            position: relative;
-            height: 40vh;
-            width: 100%;
-            margin-top: 20px;
+
+        ul {
+            padding-left: 20px;
         }
+
+        li {
+            margin-bottom: 0.8rem;
+        }
+
+        code {
+            background-color: #e8e8e8;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
         th, td {
-            padding: 12px;
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
         }
+
         th {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+        tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-        code {
-            background-color: #e9ecef;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: "Courier New", Courier, monospace;
+        
+        .score-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+        }
+        
+        .score {
+            font-size: 4rem;
+            font-weight: 700;
+        }
+        
+        .score-text {
+            font-size: 1.2rem;
+            margin-top: 0;
+        }
+        
+        .warning {
+            color: #dc3545;
+            font-weight: 700;
+        }
+        
+        .success {
+            color: #28a745;
+            font-weight: 700;
         }
 
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .content { padding: 15px 20px; }
-            header { padding: 20px; }
-            header h1 { font-size: 1.8em; }
+            .container {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
-
     <div class="container">
         <header>
             <h1>強化學習訓練分析報告</h1>
-            <p>專業顧問分析與改進建議</p>
         </header>
 
-        <div class="content">
-            <h2>1. 學習效果評估</h2>
+        <main>
+            <section id="summary">
+                <h2>報告摘要</h2>
+                <div class="summary-block">
+                    <p><strong>分析顧問:</strong> AI 分析顧問</p>
+                    <p><strong>分析日期:</strong> 2023年10月27日</p>
+                    <p><strong>核心結論:</strong> 本次訓練展示了代理（Agent）學習到解決問題路徑的<strong>潛力</strong>，但訓練過程<span class="warning">極不穩定</span>且<span class="warning">遠未收斂</span>。代理的表現在成功與災難性失敗之間劇烈波動，表明當前參數和訓練策略存在顯著問題。儘管最終回合表現良好，但這更可能是隨機運氣，而非穩定能力的體現。</p>
+                </div>
+            </section>
 
-            <div class="card card-summary">
-                <h3>核心結論</h3>
-                <p>AI 代理人 (Agent) 已經成功學習到一個通往目標的有效策略，但學習過程極不穩定且尚未收斂。最終性能表現出色，但在泛化能力和穩定性上存在隱憂。</p>
-            </div>
+            <section id="evaluation">
+                <h2>1. 學習效果評估</h2>
 
-            <h3>學習曲線趨勢分析</h3>
-            <p>提供的學習曲線數據（前20回合）展示了強化學習初期的典型特徵：<strong>高波動性</strong>。</p>
-            <ul>
-                <li><strong>獎勵曲線</strong>: 獎勵在極高的正值（如 115）和極大的負值（如 -95）之間劇烈震盪。這表明代理人在探索過程中，有時能幸運地快速找到目標，但更多時候會陷入懲罰區域（如陷阱或超時），這是探索與利用（Exploration-Exploitation）權衡的直接體現。</li>
-                <li><strong>步數曲線</strong>: 步數與獎勵呈現明顯的負相關。高獎勵對應低步數，負獎勵對應高步數。這符合預期，因為冗長的無效探索會導致步數增加並受到懲罰。</li>
-                <li><strong>摘要中的「獎勵趨勢: 下降」可能具有誤導性</strong>。雖然一個簡單的線性回歸可能得出此結論，但考慮到最終獎勵很高，更準確的描述是：獎勵從劇烈波動逐漸趨向穩定在高正值，但訓練時長不足以完全消除波動。</li>
-            </ul>
-            <div class="chart-container">
-                <canvas id="rewardChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="stepsChart"></canvas>
-            </div>
+                <h3>1.1 學習曲線分析</h3>
+                 <div style="width:100%; margin: 2rem auto;">
+                    <canvas id="learningCurveChart"></canvas>
+                </div>
+                <ul>
+                    <li><strong>獎勵趨勢:</strong> 數據摘要中的「獎勵趨勢：下降」具有誤導性。實際數據點顯示出<span class="warning">劇烈震盪</span>，而非單純下降。獎勵值在非常高的正值（如113）和非常低的負值（如-95）之間來回跳動，這是學習不穩定的典型標誌。</li>
+                    <li><strong>步數趨勢:</strong> 步數同樣表現出高方差，與獎勵的震盪同步。高效的8步和災難性的46步交替出現。</li>
+                    <li><strong>結論:</strong> 學習曲線表明代理處於一個<span class="warning">不穩定的探索階段</span>，無法穩定地複現其最佳策略。</li>
+                </ul>
 
-            <h3>收斂與最終性能</h3>
-            <ul>
-                <li><strong>收斂判斷</strong>: 訓練在 100 回合時**遠未收斂**。一個收斂的訓練其獎勵曲線應在一個較小範圍內平穩波動，而不是出現大幅的正負跳變。</li>
-                <li><strong>最終性能</strong>: 最終回合的表現（獎勵104，步數8）非常優秀，證明AI找到了最優或次優路徑。然而，這僅僅是單次回合的表現，不能完全代表模型的穩定性。</li>
-            </ul>
+                <h3>1.2 策略學習評估</h3>
+                <ul>
+                    <li><strong>是否學到有效策略:</strong> <span class="success">部分學到</span>。Q-Table和最優路徑分析顯示，代理已識別出高價值路徑，但執行不穩定。</li>
+                    <li><strong>是否收斂:</strong> <span class="warning">完全沒有收斂</span>。收斂的標誌是獎勵曲線趨於平穩高位，當前的劇烈震盪是未收斂的典型特徵。</li>
+                    <li><strong>最終性能:</strong> 最終回合的「獎勵104，步數8」是一個孤立的<span class="success">優秀數據點</span>，但不能代表模型的平均穩定性能。</li>
+                </ul>
+            </section>
 
-            <h2>2. 問題診斷</h2>
+            <section id="diagnosis">
+                <h2>2. 問題診斷</h2>
+                <h3>2.1 核心問題識別</h3>
+                <ol>
+                    <li><strong>學習不穩定性 (High Variance):</strong> 最主要的問題。策略在不同回合間差異巨大，可能由過高的學習率或不佳的探索/利用平衡導致。</li>
+                    <li><strong>探索策略不佳:</strong> 代理似乎在訓練後期仍在進行過度探索，導致頻繁陷入懲罰區域。<code>epsilon</code>衰減策略可能需要調整。</li>
+                    <li><strong>訓練回合數嚴重不足:</strong> 100個回合對於RL問題來說太少了，模型沒有足夠的時間來穩定Q值和收斂策略。</li>
+                </ol>
 
-            <h3>主要問題：訓練不足與探索策略</h3>
-            <ol>
-                <li><strong>訓練回合數嚴重不足</strong>: 100 回合對於絕大多數強化學習問題來說都太少了。AI沒有足夠的時間來充分探索狀態空間，並讓 Q-Table 的價值穩定下來。這也是學習曲線不穩定的根本原因。</li>
-                <li><strong>探索-利用策略可能失衡</strong>: 早期的劇烈波動是正常的，但如果這種波動持續時間過長，可能意味著探索率（Epsilon）衰減得太慢，導致AI即使在學到較好策略後，仍頻繁進行隨機探索而掉入陷阱。</li>
-                <li><strong>潛在的欠擬合 (Underfitting)</strong>: 由於訓練不足，模型對狀態空間的理解是不完整的。它可能只學會了「從起點到終點」的一條最優路徑，但對於這條路徑之外的狀態如何應對一無所知。一旦初始狀態或環境有微小變化，模型表現可能會急劇下降。</li>
-            </ol>
+                <h3>2.2 Q-Table 與路徑分析</h3>
+                <ul>
+                    <li><strong>Q-Table質量:</strong> <span class="success">質量合理</span>。價值從目標向起點逐步遞減，表明價值反向傳播有效。這是個積極信號。</li>
+                    <li><strong>最優路徑合理性:</strong> 代理選擇的路徑是一條<span class="success">完整且高效的路線</span>，證明Q-Table存儲的知識有價值，問題在於策略執行的穩定性。</li>
+                    <li><strong>過擬合/欠擬合:</strong> 更接近於<span class="warning">欠擬合 (Underfitting)</span> 或 **訓練不足 (Under-training)**。</li>
+                </ul>
+            </section>
 
-            <h3>Q-Table 與最優路徑分析</h3>
-            <ul>
-                <li><strong>Q-Table 學習質量</strong>: Q-Table 的價值分佈是合理的。價值最高的狀態-動作對 <code>(3,4), down, 100.94</code> 顯然是目標前一步，價值從此處向前遞減，符合貝爾曼方程的價值傳播原理。這證明學習算法本身在正確地工作。</li>
-                <li><strong>最優路徑合理性</strong>: AI 選擇的路徑 <code>[(0, 0), ..., (4, 4)]</code> 是一條完整且邏輯自洽的路徑，共用8步，與最終回合數據吻合。這條路徑不是直線，說明AI成功學會了規避障礙，是學習成功的關鍵證據。</li>
-            </ul>
+            <section id="recommendations">
+                <h2>3. 改進建議</h2>
+                <h3>3.1 參數調整</h3>
+                <table >
+                    <thead>
+                        <tr>
+                            <th>參數</th>
+                            <th>建議</th>
+                            <th>理由</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>探索率 (Epsilon, ε)</strong></td>
+                            <td>採用更積極的衰減策略（如在前20%回合快速衰減，後續慢速衰減）。</td>
+                            <td>避免在訓練後期過度探索，促使模型利用已學知識。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>學習率 (Alpha, α)</strong></td>
+                            <td><strong>顯著降低學習率</strong>（如從0.1降至0.01或更低）。</td>
+                            <td>過高的學習率是導致學習震盪和不收斂的主要原因。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>折扣因子 (Gamma, γ)</strong></td>
+                            <td>保持在0.9-0.99，作為次要調整選項。</td>
+                            <td>當前Q-Table顯示價值傳播似乎正常，優先調整前兩者。</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <h2>3. 改進建議</h2>
+                <h3>3.2 訓練策略優化</h3>
+                 <ul>
+                    <li><strong>增加訓練回合數:</strong> 將總回合數從100次<span class="success">大幅增加到至少2000次以上</span>，並持續監控學習曲線。這是最關鍵的改進之一。</li>
+                    <li><strong>獎勵塑形 (Reward Shaping):</strong> 考慮將極端的負獎勵（如-95）調整為更溫和的懲罰（如-20），以實現更平滑的學習過程。</li>
+                 </ul>
+            </section>
 
-            <h3>核心建議：增加訓練時長並優化參數</h3>
-            <ul>
-                <li><strong>增加訓練回合數 (最重要)</strong>: 建議將總回合數至少增加到 <strong>500-2000</strong> 回合。觀察獎勵曲線是否趨於平穩，以此判斷收斂情況。</li>
-                <li><strong>調整探索率 (Epsilon) 衰減策略</strong>:
-                    <ul>
-                        <li>確保有一個明確的 Epsilon 衰減機制（如指數衰減）。</li>
-                        <li>可以嘗試讓 Epsilon 衰減得更快一些，或設置一個合理的最小 Epsilon (如 0.01)，使得模型在後期能更專注於利用已學知識。</li>
-                    </ul>
-                </li>
-                <li><strong>微調學習率 (Alpha) 和折扣因子 (Gamma)</strong>:
-                    <ul>
-                        <li><strong>學習率 (Alpha)</strong>: 如果增加回合數後，獎勵值仍在劇烈震盪，可以考慮適度降低學習率（如從 0.1 降至 0.05），使價值更新更平滑。</li>
-                        <li><strong>折扣因子 (Gamma)</strong>: 當前 Q-Table 價值傳播正常，<code>gamma</code> 參數看似合理，暫時無需調整。</li>
-                    </ul>
-                </li>
-                 <li><strong>引入獎勵塑形 (Reward Shaping)</strong>: 如果想加速學習，可以考慮引入微小的負獎勵（如-0.1）給每一步移動。這會鼓勵AI尋找更短的路徑，而不僅僅是避免大的懲罰。</li>
-            </ul>
+            <section id="algorithm-analysis">
+                <h2>4. 算法特性分析</h2>
+                <ul>
+                    <li><strong>推測算法:</strong> 很可能是 <strong>Q-Learning</strong> 或 <strong>SARSA</strong>，一種表格型RL算法。</li>
+                    <li><strong>優點:</strong> 可解釋性強（可查看Q-Table）、理論完備、實現簡單。</li>
+                    <li><strong>缺點:</strong> 無法擴展到大規模問題（維度詛咒）、樣本效率低。</li>
+                    <li><strong>適用場景:</strong> 非常適合當前這種小規模、離散的網格世界問題。</li>
+                    <li><strong>未來選擇:</strong> 若問題規模擴大，可考慮升級到<strong>深度Q網絡 (DQN)</strong>。</li>
+                </ul>
+            </section>
 
-            <h2>4. 算法特性分析</h2>
-
-            <h3>算法推斷：Q-Learning</h3>
-            <p>根據 Q-Table 的存在和其更新方式，可以推斷當前使用的是經典的 <strong>Q-Learning</strong> 算法或其變體 (如 SARSA)。</p>
-
-            <h3>優缺點</h3>
-            <ul>
-                <li><strong>優點</strong>:
-                    <ul>
-                        <li><strong>簡單直觀</strong>: 算法原理清晰，易於實現。</li>
-                        <li><strong>可解釋性強</strong>: 可以通過檢查 Q-Table 直觀地理解AI的決策依據。</li>
-                        <li><strong>離策略 (Off-Policy)</strong>: Q-Learning 可以從過去的經驗（包括隨機探索的經驗）中學習最優策略，學習效率較高。</li>
-                    </ul>
-                </li>
-                <li><strong>缺點</strong>:
-                    <ul>
-                        <li><strong>維度詛咒</strong>: 需要為每個「狀態-動作」對維護一個條目，當狀態或動作空間巨大時，Q-Table會變得異常龐大，導致內存和計算資源需求激增。</li>
-                        <li><strong>不適用於連續空間</strong>: 無法直接處理連續的狀態或動作空間。</li>
-                    </ul>
-                </li>
-            </ul>
-
-            <h3>適用場景與算法選擇</h3>
-            <p>Q-Learning 非常適用於當前這種<strong>離散、小規模的環境</strong>（如棋盤遊戲、迷宮問題）。對於更複雜的問題，例如具有高維圖像輸入或連續控制的場景（如自動駕駛、機器人手臂控制），則應考慮使用 <strong>深度強化學習 (DRL)</strong> 算法，如：</p>
-            <ul>
-                <li><strong>Deep Q-Network (DQN)</strong>: 使用神經網絡來近似 Q-Table，解決狀態空間過大的問題。</li>
-                <li><strong>Policy Gradient (PG) / A2C / A3C</strong>: 直接學習策略函數，更適用於連續動作空間。</li>
-            </ul>
-
-            <h2>5. 總結與評分</h2>
-
-            <div class="score-box">
-                <div class="score-desc">整體訓練效果評分</div>
-                <div class="score">7 / 10</div>
-                <div class="score-desc"><strong>「方向正確，但火候不足」</strong></div>
-            </div>
-
-            <h3>主要成就</h3>
-            <ul>
-                <li><strong>成功驗證了算法可行性</strong>: 證明了當前算法和環境設置能夠解決該問題。</li>
-                <li><strong>找到了最優路徑</strong>: 最終產出了一個高效、合理的解決策略。</li>
-            </ul>
-
-            <h3>主要問題</h3>
-            <ul>
-                <li><strong>訓練不充分</strong>: 100回合的訓練量遠遠不夠，導致模型未收斂，穩定性差。</li>
-                <li><strong>結論過早</strong>: 基於當前數據判斷模型「訓練完成」是為時過早的。</li>
-            </ul>
-
-            <h3>實用性評估</h3>
-            <p>在當前階段，模型學到的策略是有效的，但其實用性受限於其不穩定性。在投入實際應用前，<strong>必須</strong>按照改進建議進行更長時間的訓練，並驗證其在多種初始條件下的穩定表現。一旦訓練收斂，該模型對於解決此特定問題將非常實用。</p>
-        </div>
+            <section id="conclusion">
+                <h2>5. 總結與評分</h2>
+                <div class="score-card">
+                    <p class="score-text">整體訓練效果評分</p>
+                    <div class="score">4 / 10</div>
+                    <p class="score-text">「概念驗證成功，但工程實踐失敗」</p>
+                </div>
+                <h3>主要成就與問題</h3>
+                <ul>
+                    <li><strong>主要成就:</strong> <span class="success">成功構建了能反向傳播價值的Q-Table；能夠識別出有效路徑。</span></li>
+                    <li><strong>主要問題:</strong> <span class="warning">學習過程極不穩定；訓練時長嚴重不足；探索與利用失衡。</span></li>
+                </ul>
+                <h3>實用性評估</h3>
+                <p><strong>當前狀態無實用價值</strong>，因其性能不可靠。但通過應用本報告中的改進建議，該模型有<strong>很高的潛力</strong>收斂到一個穩定且高效的策略，從而在該任務上變得非常實用。</p>
+            </section>
+        </main>
     </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
+    <script>
+        const ctx = document.getElementById('learningCurveChart').getContext('2d');
         const rewardData = [113, -63, 111, -95, -77, 81, 113, 100, -57, 115, 96, 107, -67, 90, 111, 102, 87, 104, -65, 111];
-        const stepsData = [32, 14, 12, 46, 28, 20, 32, 12, 8, 30, 16, 16, 18, 22, 12, 10, 14, 8, 16, 12];
+        const stepData = [32, 14, 12, 46, 28, 20, 32, 12, 8, 30, 16, 16, 18, 22, 12, 10, 14, 8, 16, 12];
         const labels = Array.from({ length: 20 }, (_, i) => `回合 ${i + 1}`);
 
-        // Reward Chart
-        const ctxReward = document.getElementById('rewardChart').getContext('2d');
-        new Chart(ctxReward, {
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: '每回合獎勵',
-                    data: rewardData,
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    fill: true,
-                    tension: 0.1
-                }]
+                datasets: [
+                    {
+                        label: '每回合獎勵',
+                        data: rewardData,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {
+                        label: '每回合步數',
+                        data: stepData,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y1' 
+                    }
+                ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 plugins: {
                     title: {
                         display: true,
-                        text: '獎勵學習曲線 (前20回合)',
-                        font: { size: 16 }
+                        text: '學習曲線 (前20回合)',
+                        font: { size: 18 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
                     }
                 },
                 scales: {
-                    y: {
-                        title: { display: true, text: '獎勵值' }
-                    },
                     x: {
-                        title: { display: true, text: '回合數' }
+                        title: {
+                            display: true,
+                            text: '回合數'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '獎勵值',
+                            color: '#007bff'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '步數',
+                            color: '#dc3545'
+                        },
+                        grid: {
+                            drawOnChartArea: false, // only draw grid lines for the first Y-axis
+                        },
                     }
                 }
             }
         });
-
-        // Steps Chart
-        const ctxSteps = document.getElementById('stepsChart').getContext('2d');
-        new Chart(ctxSteps, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '每回合步數',
-                    data: stepsData,
-                    borderColor: 'rgba(23, 162, 184, 1)',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: '步數學習曲線 (前20回合)',
-                        font: { size: 16 }
-                    }
-                },
-                scales: {
-                    y: {
-                        title: { display: true, text: '步數' }
-                    },
-                    x: {
-                        title: { display: true, text: '回合數' }
-                    }
-                }
-            }
-        });
-    });
-</script>
-
+    </script>
 </body>
 </html>
-
-<hr />
-
-<h3>Markdown 格式報告</h3>
-
-<h1>強化學習訓練分析報告</h1>
-
-<blockquote>
-  <p>專業顧問分析與改進建議</p>
-</blockquote>
-
-<h2>1. 學習效果評估</h2>
-
-<h4>核心結論</h4>
-
-<p>AI 代理人 (Agent) 已經成功學習到一個通往目標的有效策略，但學習過程極不穩定且尚未收斂。最終性能表現出色，但在泛化能力和穩定性上存在隱憂。</p>
-
-<h3>學習曲線趨勢分析</h3>
-
-<p>提供的學習曲線數據（前20回合）展示了強化學習初期的典型特徵：<strong>高波動性</strong>。</p>
-
-<ul>
-<li><strong>獎勵曲線</strong>: 獎勵在極高的正值（如 115）和極大的負值（如 -95）之間劇烈震盪。這表明代理人在探索過程中，有時能幸運地快速找到目標，但更多時候會陷入懲罰區域（如陷阱或超時），這是探索與利用（Exploration-Exploitation）權衡的直接體現。</li>
-<li><strong>步數曲線</strong>: 步數與獎勵呈現明顯的負相關。高獎勵對應低步數，負獎勵對應高步數。這符合預期，因為冗長的無效探索會導致步數增加並受到懲罰。</li>
-<li><strong>摘要中的「獎勵趨勢: 下降」可能具有誤導性</strong>。雖然一個簡單的線性回歸可能得出此結論，但考慮到最終獎勵很高，更準確的描述是：獎勵從劇烈波動逐漸趨向穩定在高正值，但訓練時長不足以完全消除波動。</li>
-</ul>
-
-<h3>收斂與最終性能</h3>
-
-<ul>
-<li><strong>收斂判斷</strong>: 訓練在 100 回合時<strong>遠未收斂</strong>。一個收斂的訓練其獎勵曲線應在一個較小範圍內平穩波動，而不是出現大幅的正負跳變。</li>
-<li><strong>最終性能</strong>: 最終回合的表現（獎勵104，步數8）非常優秀，證明AI找到了最優或次優路徑。然而，這僅僅是單次回合的表現，不能完全代表模型的穩定性。</li>
-</ul>
-
-<h2>2. 問題診斷</h2>
-
-<h3>主要問題：訓練不足與探索策略</h3>
-
-<ol>
-<li><strong>訓練回合數嚴重不足</strong>: 100 回合對於絕大多數強化學習問題來說都太少了。AI沒有足夠的時間來充分探索狀態空間，並讓 Q-Table 的價值穩定下來。這也是學習曲線不穩定的根本原因。</li>
-<li><strong>探索-利用策略可能失衡</strong>: 早期的劇烈波動是正常的，但如果這種波動持續時間過長，可能意味著探索率（Epsilon）衰減得太慢，導致AI即使在學到較好策略後，仍頻繁進行隨機探索而掉入陷阱。</li>
-<li><strong>潛在的欠擬合 (Underfitting)</strong>: 由於訓練不足，模型對狀態空間的理解是不完整的。它可能只學會了「從起點到終點」的一條最優路徑，但對於這條路徑之外的狀態如何應對一無所知。一旦初始狀態或環境有微小變化，模型表現可能會急劇下降。</li>
-</ol>
-
-<h3>Q-Table 與最優路徑分析</h3>
-
-<ul>
-<li><strong>Q-Table 學習質量</strong>: Q-Table 的價值分佈是合理的。價值最高的狀態-動作對 <code>(3,4), down, 100.94</code> 顯然是目標前一步，價值從此處向前遞減，符合貝爾曼方程的價值傳播原理。這證明學習算法本身在正確地工作。</li>
-<li><strong>最優路徑合理性</strong>: AI 選擇的路徑 <code>[(0, 0), ..., (4, 4)]</code> 是一條完整且邏輯自洽的路徑，共用8步，與最終回合數據吻合。這條路徑不是直線，說明AI成功學會了規避障礙，是學習成功的關鍵證據。</li>
-</ul>
-
-<h2>3. 改進建議</h2>
-
-<h3>核心建議：增加訓練時長並優化參數</h3>
-
-<ul>
-<li><strong>增加訓練回合數 (最重要)</strong>: 建議將總回合數至少增加到 <strong>500-2000</strong> 回合。觀察獎勵曲線是否趨於平穩，以此判斷收斂情況。</li>
-<li><strong>調整探索率 (Epsilon) 衰減策略</strong>:
-<ul>
-<li>確保有一個明確的 Epsilon 衰減機制（如指數衰減）。</li>
-<li>可以嘗試讓 Epsilon 衰減得更快一些，或設置一個合理的最小 Epsilon (如 0.01)，使得模型在後期能更專注於利用已學知識。</li>
-</ul></li>
-<li><strong>微調學習率 (Alpha) 和折扣因子 (Gamma)</strong>:
-<ul>
-<li><strong>學習率 (Alpha)</strong>: 如果增加回合數後，獎勵值仍在劇烈震盪，可以考慮適度降低學習率（如從 0.1 降至 0.05），使價值更新更平滑。</li>
-<li><strong>折扣因子 (Gamma)</strong>: 當前 Q-Table 價值傳播正常，<code>gamma</code> 參數看似合理，暫時無需調整。</li>
-</ul></li>
-<li><strong>引入獎勵塑形 (Reward Shaping)</strong>: 如果想加速學習，可以考慮引入微小的負獎勵（如-0.1）給每一步移動。這會鼓勵AI尋找更短的路徑，而不僅僅是避免大的懲罰。</li>
-</ul>
-
-<h2>4. 算法特性分析</h2>
-
-<h3>算法推斷：Q-Learning</h3>
-
-<p>根據 Q-Table 的存在和其更新方式，可以推斷當前使用的是經典的 <strong>Q-Learning</strong> 算法或其變體 (如 SARSA)。</p>
-
-<h3>優缺點</h3>
-
-<ul>
-<li><strong>優點</strong>:
-<ul>
-<li><strong>簡單直觀</strong>: 算法原理清晰，易於實現。</li>
-<li><strong>可解釋性強</strong>: 可以通過檢查 Q-Table 直觀地理解AI的決策依據。</li>
-<li><strong>離策略 (Off-Policy)</strong>: Q-Learning 可以從過去的經驗（包括隨機探索的經驗）中學習最優策略，學習效率較高。</li>
-</ul></li>
-<li><strong>缺點</strong>:
-<ul>
-<li><strong>維度詛咒</strong>: 需要為每個「狀態-動作」對維護一個條目，當狀態或動作空間巨大時，Q-Table會變得異常龐大，導致內存和計算資源需求激增。</li>
-<li><strong>不適用於連續空間</strong>: 無法直接處理連續的狀態或動作空間。</li>
-</ul></li>
-</ul>
-
-<h3>適用場景與算法選擇</h3>
-
-<p>Q-Learning 非常適用於當前這種<strong>離散、小規模的環境</strong>（如棋盤遊戲、迷宮問題）。對於更複雜的問題，例如具有高維圖像輸入或連續控制的場景（如自動駕駛、機器人手臂控制），則應考慮使用 <strong>深度強化學習 (DRL)</strong> 算法，如：
-- <strong>Deep Q-Network (DQN)</strong>: 使用神經網絡來近似 Q-Table，解決狀態空間過大的問題。
-- <strong>Policy Gradient (PG) / A2C / A3C</strong>: 直接學習策略函數，更適用於連續動作空間。</p>
-
-<h2>5. 總結與評分</h2>
-
-<h3>整體訓練效果評分</h3>
-
-<ul>
-<li><strong>得分</strong>: 7 / 10</li>
-<li><strong>評價</strong>: <strong>「方向正確，但火候不足」</strong></li>
-</ul>
-
-<h3>主要成就</h3>
-
-<ul>
-<li><strong>成功驗證了算法可行性</strong>: 證明了當前算法和環境設置能夠解決該問題。</li>
-<li><strong>找到了最優路徑</strong>: 最終產出了一個高效、合理的解決策略。</li>
-</ul>
-
-<h3>主要問題</h3>
-
-<ul>
-<li><strong>訓練不充分</strong>: 100回合的訓練量遠遠不夠，導致模型未收斂，穩定性差。</li>
-<li><strong>結論過早</strong>: 基於當前數據判斷模型「訓練完成」是為時過早的。</li>
-</ul>
-
-<h3>實用性評估</h3>
-
-<p>在當前階段，模型學到的策略是有效的，但其實用性受限於其不穩定性。在投入實際應用前，<strong>必須</strong>按照改進建議進行更長時間的訓練，並驗證其在多種初始條件下的穩定表現。一旦訓練收斂，該模型對於解決此特定問題將非常實用。</p>

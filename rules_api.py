@@ -10,16 +10,15 @@ RULES_DIR = 'rules'
 os.makedirs(RULES_DIR, exist_ok=True)
 
 class Rule(BaseModel):
-    id: str
-    name: str
+    id: str = ""  # 創建時自動生成
+    name: str = "新規則"  # 預設名稱
     # 遊戲規則參數
-    bonusReward: int
-    trapPenalty: int
-    stepDecay: float
-    stepPenalty: float
-    goalReward: int
-    wallPenalty: int
-    maxSteps: int
+    bonusReward: int = 10
+    stepDecay: float = 1.0
+    stepPenalty: float = -1
+    goalReward: int = 100
+    wallPenalty: int = -1
+    maxSteps: int = 100
     # 強化學習參數
     learningRate: float = 0.1
     discountFactor: float = 0.95

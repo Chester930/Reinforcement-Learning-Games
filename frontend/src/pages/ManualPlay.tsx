@@ -42,6 +42,7 @@ const ManualPlay: React.FC = () => {
   // 當前遊戲的地圖和規則ID（用於重玩時保持相同設定）
   const [currentGameMapId, setCurrentGameMapId] = useState('');
   const [currentGameRuleId, setCurrentGameRuleId] = useState('');
+  const [currentMapData, setCurrentMapData] = useState<string[][]>([]);  // 新增：當前遊戲中的地圖狀態
 
   // 載入地圖與規則列表
   useEffect(() => {
@@ -53,6 +54,7 @@ const ManualPlay: React.FC = () => {
   const loadMap = async (id: string) => {
     const res = await axios.get(`${API_BASE}/maps/maps/${id}`);
     setMapData(res.data.map);
+    setCurrentMapData(JSON.parse(JSON.stringify(res.data.map))); // 深度複製地圖
     // 找起點
     for (let i = 0; i < res.data.map.length; i++) {
       for (let j = 0; j < res.data.map[0].length; j++) {
@@ -94,17 +96,17 @@ const ManualPlay: React.FC = () => {
 
   // 移動
   const movePlayer = useCallback((di: number, dj: number) => {
-    if (!playerPos || !mapData.length || !ruleData || gameOver) return;
+    if (!playerPos || !currentMapData.length || !ruleData || gameOver) return;
     const [i, j] = playerPos;
     const ni = i + di;
     const nj = j + dj;
-    const numRows = mapData.length;
-    const numCols = mapData[0].length;
+    const numRows = currentMapData.length;
+    const numCols = currentMapData[0].length;
     let newScore = score;
     let newSteps = steps + 1;
     let msg = '';
     // 撞牆
-    if (ni < 0 || ni >= numRows || nj < 0 || nj >= numCols || mapData[ni][nj] === '1') {
+    if (ni < 0 || ni >= numRows || nj < 0 || nj >= numCols || currentMapData[ni][nj] === '1') {
       newScore += ruleData.wallPenalty;
       msg = '撞牆！';
     } else {
@@ -112,10 +114,16 @@ const ManualPlay: React.FC = () => {
       setPlayerPos([ni, nj]);
       // 每步懲罰
       newScore += ruleData.stepPenalty;
-      // 寶箱
-      if (mapData[ni][nj] === 'R') newScore += ruleData.bonusReward;
+      // 寶箱（只能拿一次）
+      if (currentMapData[ni][nj] === 'R') {
+        newScore += ruleData.bonusReward;
+        // 更新地圖，將寶箱位置變為空格
+        const newMapData = [...currentMapData];
+        newMapData[ni][nj] = '0';
+        setCurrentMapData(newMapData);
+      }
       // 終點
-      if (mapData[ni][nj] === 'G') {
+      if (currentMapData[ni][nj] === 'G') {
         newScore += ruleData.goalReward;
         setGameOver(true);
         setGameMsg('恭喜到達終點！');
@@ -132,7 +140,7 @@ const ManualPlay: React.FC = () => {
     setScore(newScore);
     setSteps(newSteps);
     if (!gameOver && msg) setGameMsg(msg);
-  }, [playerPos, mapData, ruleData, score, steps, gameOver]);
+  }, [playerPos, currentMapData, ruleData, score, steps, gameOver]);
 
   // 鍵盤操作
   useEffect(() => {
@@ -186,8 +194,8 @@ const ManualPlay: React.FC = () => {
             {/* 地圖區域 */}
             <Box>
               <Paper sx={{ p: 2, display: 'inline-block', background: '#f5fbe7' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${mapData[0].length}, 48px)`, gap: 0 }}>
-                  {mapData.map((row, i) =>
+                <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${currentMapData[0].length}, 48px)`, gap: 0 }}>
+                  {currentMapData.map((row, i) =>
                     row.map((cell, j) => {
                       const type = cellType(cell);
                       const isPlayer = playerPos[0] === i && playerPos[1] === j;

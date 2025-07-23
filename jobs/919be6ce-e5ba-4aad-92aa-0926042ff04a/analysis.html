@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化學習訓練分析報告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --border-radius: 0.375rem;
+        }
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            margin: 0;
+            padding: 1.5rem;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3, h4 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.5rem; border-bottom: 1px solid var(--secondary-color); }
+        h4 { font-size: 1.2rem; border-bottom: none; }
+        .tag {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.8em;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: var(--border-radius);
+        }
+        .tag-danger { background-color: var(--danger-color); }
+        .tag-warning { background-color: var(--warning-color); color: var(--dark-color); }
+        .tag-success { background-color: var(--success-color); }
+        .tag-info { background-color: var(--primary-color); }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background-color: var(--light-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            border-left: 5px solid;
+        }
+        .card.score-card { border-color: var(--danger-color); }
+        .card.achievement-card { border-color: var(--success-color); }
+        .card.problem-card { border-color: var(--danger-color); }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-content {
+            font-size: 1rem;
+        }
+        .score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--danger-color);
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .container { padding: 1rem; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>強化學習訓練分析報告</h1>
+
+        <section id="overview">
+            <h2>總覽與核心結論</h2>
+            <p>本報告旨在對提供的強化學習訓練數據進行全面分析。總體來看，雖然智能體（Agent）最終找到了一條能夠到達目標的路徑，但整個訓練過程表現出<strong>嚴重的學習不穩定性</strong>和<strong>策略未收斂</strong>的跡象。核心問題在於學習參數設定不當，導致智能體在訓練後期表現不升反降。</p>
+            <div class="summary-grid">
+                <div class="card score-card">
+                    <div class="card-title">整體評分</div>
+                    <div class="card-content">
+                        <span class="score">3 / 10</span>
+                    </div>
+                </div>
+                <div class="card achievement-card">
+                    <div class="card-title">主要成就</div>
+                    <div class="card-content">成功探索並找到了一個能到達終點的策略。</div>
+                </div>
+                <div class="card problem-card">
+                    <div class="card-title">主要問題</div>
+                    <div class="card-content">訓練過程發散，獎勵下降，步數上升，策略非最優。</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="evaluation">
+            <h2>1. 學習效果評估</h2>
+            
+            <h3>1.1 學習曲線分析</h3>
+            <ul>
+                <li><strong>獎勵趨勢</strong>: <span class="tag tag-danger">下降</span>。這與強化學習的目標背道而馳，是訓練失敗的強烈信號。</li>
+                <li><strong>步數趨勢</strong>: <span class="tag tag-danger">上升</span>。智能體完成任務的效率在降低，策略正在惡化。</li>
+                <li><strong>初期表現</strong>: 下圖展示了前20回合的學習曲線。此階段獎勵為負，符合早期隨機探索的特徵。然而，關鍵的整體趨勢（未展示）是惡化的。</li>
+            </ul>
+            <canvas id="learningCurveChart" width="400" height="200"></canvas>
+            
+            <h3>1.2 策略學習評估</h3>
+            <p>智能體<strong>學習到了部分有效策略</strong>。從Q-Table的高價值 `(3,4), down, 100.94` 和最終路徑終點 `(4, 4)` 可推斷，它成功定位了目標。但路徑 `... (0, 4) -> (0, 5) -> ... -> (2, 4) ...` 存在明顯繞路，表明策略是**次優**的。</p>
+
+            <h3>1.3 收斂性判斷</h3>
+            <p><strong>訓練未收斂</strong>，甚至可以說是 <span class="tag tag-danger">發散</span>。獎勵下降和步數上升的趨勢是訓練發散的明確證據。策略未能穩定在一個高效的水平。</p>
+
+            <h3>1.4 最終性能表現</h3>
+            <p>「最終獎勵: 123」這個數據具有<strong>欺騙性</strong>。它很可能是一次探索率為0的確定性執行結果，不能代表模型在訓練過程中的真實平均性能。</p>
+        </section>
+
+        <section id="diagnosis">
+            <h2>2. 問題診斷</h2>
+            <h3>2.1 核心問題：訓練不穩定與發散</h3>
+            <p>最可能的原因是<strong>學習率 (Learning Rate, alpha) 過高</strong>。過高的學習率會導致Q值更新過度，使其在最優解附近劇烈振盪而無法收斂，甚至導致“災難性遺忘”。</p>
+
+            <h3>2.2 最優路徑合理性</h3>
+            <p>路徑<strong>不合理且次優</strong>。繞路行為表明智能體對地圖的價值“理解”存在偏差，可能在更優路徑上的Q值被錯誤地低估，或是探索不足。</p>
+            
+            <h3>2.3 探索與利用</h3>
+            <p>探索策略可能存在問題。鑑於獎勵持續下降，<strong>探索率衰減過慢</strong>或**學習率過高**是主要嫌疑，導致智能體在後期破壞了已學到的好策略。</p>
+        </section>
+
+        <section id="suggestions">
+            <h2>3. 改進建議</h2>
+            <h3>3.1 參數調整（高優先級）</h3>
+            <ul>
+                <li><strong>降低學習率 (Alpha)</strong>: <span class="tag tag-info">首要建議</span> 將學習率顯著降低，建議從 <strong>0.1</strong> 開始嘗試，並可考慮使用學習率衰減。</li>
+                <li><strong>調整探索率 (Epsilon)</strong>: 確保有明確的指數衰減策略，在大部分回合內從 1.0 衰減至 0.1 或 0.01。</li>
+                <li><strong>折扣因子 (Gamma)</strong>: 可暫時保持不變，優先調整 Alpha 和 Epsilon。</li>
+            </ul>
+
+            <h3>3.2 訓練策略優化</h3>
+            <ul>
+                <li><strong>增加訓練回合數</strong>: 調整參數後，將回合數增加到 <strong>5000 或 10000</strong>，以提供充分的收斂時間。</li>
+                <li><strong>繪製完整的學習曲線</strong>: <span class="tag tag-warning">必須執行</span> 記錄並繪製所有回合的獎勵/步數圖，以便進行有效診斷。</li>
+            </ul>
+        </section>
+        
+        <section id="algorithm">
+            <h2>4. 算法特性分析 (基於Q-Learning假設)</h2>
+            <h3>4.1 優缺點</h3>
+            <ul>
+                <li><strong>優點</strong>: 簡單直觀，無模型，離策略。</li>
+                <li><strong>缺點</strong>: 維度災難，收斂慢，對超參數敏感。</li>
+            </ul>
+            <h3>4.2 適用場景與建議</h3>
+            <p>當前表格型Q-Learning適用於<strong>狀態和動作空間都較小</strong>的離散環境。若問題複雜度增加，應考慮升級到 <strong>DQN (Deep Q-Network)</strong>。</p>
+        </section>
+
+        <section id="summary">
+            <h2>5. 總結與評分</h2>
+            <ul>
+                <li><strong>整體評分</strong>: <span class="tag tag-danger">3 / 10</span></li>
+                <li><strong>實用性評估</strong>: 當前模型<strong>不具備實用價值</strong>。策略不穩定且效率低下，在實際應用中不可靠。</li>
+            </ul>
+            <p><strong>最終建議</strong>: 立即停止基於當前參數的訓練。請優先<strong>調整超參數</strong>（特別是降低學習率），並<strong>延長訓練週期</strong>，同時對整個訓練過程進行可視化監控。</p>
+        </section>
+    </div>
+
+    <script>
+        const rewardData = [-65, -56, -50, -54, -39, -98, -39, -74, -79, -101, -81, -48, -57, -67, -72, -44, -41, -66, -48, -78];
+        const stepData = [38, 18, 12, 16, 45, 49, 12, 36, 41, 74, 32, 10, 8, 18, 34, 6, 14, 28, 10, 40];
+        const labels = Array.from({ length: 20 }, (_, i) => `回合 ${i + 1}`);
+
+        const ctx = document.getElementById('learningCurveChart').getContext('2d');
+        const learningCurveChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '每回合獎勵',
+                        data: rewardData,
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        yAxisID: 'y-reward',
+                        tension: 0.1
+                    },
+                    {
+                        label: '每回合步數',
+                        data: stepData,
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        yAxisID: 'y-steps',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                stacked: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '學習曲線 (前20回合)',
+                        font: { size: 16 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        display: false
+                    },
+                    'y-reward': {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '獎勵'
+                        }
+                    },
+                    'y-steps': {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '步數'
+                        },
+                        grid: {
+                            drawOnChartArea: false, // only draw grid for one axis to avoid clutter
+                        },
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
+import copy  # 新增 copy 模組
 
 # 參數設定
 MAP_PATH = 'maps/example_map.json'
@@ -22,13 +23,6 @@ REWARD = 'R'
 TRAP = 'T'
 OBSTACLE = '1'
 EMPTY = '0'
-
-# 獎勵設計
-REWARD_DEFAULT = -1
-REWARD_GOAL = 100
-REWARD_REWARD = 10
-REWARD_TRAP = -50
-# 移除障礙物獎勵，因為代理無法移動到障礙物
 
 # Q-Table 初始化設定
 OPTIMISTIC_INIT = False  # 是否使用樂觀初始化
@@ -120,23 +114,6 @@ def move(map_grid, pos, action):
     return pos  # 撞牆或障礙物不動
 
 
-def get_reward(cell):
-    """獲取獎勵值（移除障礙物獎勵，因為代理無法到達）"""
-    if cell == GOAL:
-        return REWARD_GOAL
-    elif cell == REWARD:
-        return REWARD_REWARD
-    elif cell == TRAP:
-        return REWARD_TRAP
-    else:
-        return REWARD_DEFAULT
-
-
-def state_to_str(pos):
-    """將位置轉換為字串"""
-    return f"({pos[0]},{pos[1]})"
-
-
 def get_epsilon(episode, total_episodes):
     """計算當前探索率（指數衰減）"""
     if EPSILON_DECAY == 1.0:
@@ -168,12 +145,46 @@ def save_results(qtable_rows, log_records, output_dir):
         raise ValueError(f'儲存結果時發生錯誤: {str(e)}')
 
 
-def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True):
+def load_rule(rule_id):
+    """載入規則設定"""
+    try:
+        with open('rules.json', 'r', encoding='utf-8') as f:
+            rules = json.load(f)
+            for rule in rules:
+                if rule['id'] == rule_id:
+                    return rule
+    except Exception as e:
+        print(f"載入規則失敗: {str(e)}")
+        return None
+
+def get_reward(cell, rule_data):
+    """獲取獎勵值（使用規則設定）"""
+    if cell == GOAL:
+        return rule_data['goalReward']
+    elif cell == REWARD:
+        return rule_data['bonusReward']
+    elif cell == TRAP:
+        return 0  # 陷阱不給予懲罰，只用於結束回合
+    else:
+        return rule_data['stepPenalty']
+
+def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True, rule_id=None):
     """SARSA 主訓練函數"""
     # 設定隨機種子以提高可重現性
     if seed is not None:
         np.random.seed(seed)
         print(f"隨機種子設定為: {seed}")
+    
+    # 載入規則
+    rule_data = load_rule(rule_id) if rule_id else {
+        'goalReward': 100,
+        'bonusReward': 10,
+        'trapPenalty': -50,
+        'stepPenalty': -1,
+        'wallPenalty': -1,
+        'stepDecay': 1.0,
+        'maxSteps': MAX_STEPS
+    }
     
     # 載入並驗證地圖
     map_grid = load_map(map_path)
@@ -197,15 +208,18 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
     print(f"開始 SARSA 訓練：{episodes} 回合")
     print(f"學習率: {learning_rate}, 折扣因子: {discount_factor}")
     print(f"探索率: {epsilon_start} → {EPSILON_END} (衰減: {EPSILON_DECAY})")
+    print(f"使用規則：{rule_data}")
     
     for episode in range(1, episodes+1):
-        pos = find_start(map_grid)
+        # 每回合開始時重置地圖
+        current_map = copy.deepcopy(map_grid)
+        pos = find_start(current_map)
         state = pos
         episode_reward = 0
         current_epsilon = get_epsilon(episode, episodes)
         success = False
         last_cell = None
-        valid_actions = get_valid_actions(map_grid, state)
+        valid_actions = get_valid_actions(current_map, state)
         # 初始動作選擇
         if np.random.rand() < current_epsilon:
             action = np.random.choice(valid_actions)
@@ -215,14 +229,22 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
             best_actions = [a for a, q in zip(valid_actions, q_vals) if q == max_q]
             action = np.random.choice(best_actions)
         
-        for step in range(1, MAX_STEPS+1):
-            next_pos = move(map_grid, state, action)
-            cell = map_grid[next_pos[0]][next_pos[1]]
-            reward = get_reward(cell)
+        for step in range(1, rule_data['maxSteps']+1):
+            next_pos = move(current_map, state, action)
+            cell = current_map[next_pos[0]][next_pos[1]]
+            reward = get_reward(cell, rule_data)
+            
+            # 如果是獎勵格，取得後變為空格
+            if cell == REWARD:
+                current_map[next_pos[0]][next_pos[1]] = EMPTY
+            
+            # 應用步數衰減
+            reward = round(reward * (rule_data['stepDecay'] ** step))
+            
             episode_reward += reward
             last_cell = cell
             
-            next_valid_actions = get_valid_actions(map_grid, next_pos)
+            next_valid_actions = get_valid_actions(current_map, next_pos)
             
             # 下一動作選擇（SARSA 特性）
             if next_valid_actions:
@@ -255,7 +277,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
             })
             
             # 修正終止條件：目標或陷阱都終止回合
-            if is_terminal(cell) or step == MAX_STEPS:
+            if is_terminal(cell) or step == rule_data['maxSteps']:
                 if cell == GOAL:
                     success = True
                 break
@@ -299,6 +321,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=None, help='隨機種子（用於可重現性）')
     parser.add_argument('--optimistic', action='store_true', help='使用樂觀初始化')
     parser.add_argument('--strict_goal_reward_zero', action='store_true', default=True, help='沒到終點時分數歸零（預設開啟）')
+    parser.add_argument('--rule', type=str, default=None, help='規則ID')
     
     args = parser.parse_args()
     
@@ -308,7 +331,7 @@ if __name__ == '__main__':
         print("使用樂觀初始化")
     
     try:
-        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero)
+        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero, args.rule)
     except Exception as e:
         print(f"訓練過程中發生錯誤: {str(e)}")
         exit(1) 

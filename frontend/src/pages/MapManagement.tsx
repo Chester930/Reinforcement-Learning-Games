@@ -356,9 +356,9 @@ const MapManagement: React.FC = () => {
       goalReward: rule.goalReward ?? 100,
       wallPenalty: rule.wallPenalty ?? -5,
       maxSteps: rule.maxSteps ?? 100,
-              learningRate: rule.learningRate ?? 0.1,
-        discountFactor: rule.discountFactor ?? 0.95,
-        epsilon: rule.epsilon ?? 1.0,
+      learningRate: rule.learningRate ?? 0.1,
+      discountFactor: rule.discountFactor ?? 0.95,
+      epsilon: rule.epsilon ?? 1.0,
       seed: rule.seed ?? null,
       optimistic: rule.optimistic ?? false,
     });

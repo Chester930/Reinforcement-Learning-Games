@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
+import copy  # 新增 copy 模組
 
 # 參數設定
 MAP_PATH = 'maps/example_map.json'
@@ -23,13 +24,6 @@ TRAP = 'T'
 OBSTACLE = '1'
 EMPTY = '0'
 
-# 獎勵設計
-REWARD_DEFAULT = -1
-REWARD_GOAL = 100
-REWARD_REWARD = 10
-REWARD_TRAP = -50
-# 移除障礙物獎勵，因為代理無法移動到障礙物
-
 # Q-Table 初始化設定
 OPTIMISTIC_INIT = False  # 是否使用樂觀初始化
 OPTIMISTIC_VALUE = 1.0   # 樂觀初始值
@@ -40,6 +34,19 @@ def load_map(path):
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return data['map']
+
+
+def load_rule(rule_id):
+    """載入規則設定"""
+    try:
+        with open('rules.json', 'r', encoding='utf-8') as f:
+            rules = json.load(f)
+            for rule in rules:
+                if rule['id'] == rule_id:
+                    return rule
+    except Exception as e:
+        print(f"載入規則失敗: {str(e)}")
+        return None
 
 
 def validate_map(map_grid):
@@ -109,16 +116,16 @@ def move(map_grid, pos, action):
     return pos  # 撞牆或障礙物不動
 
 
-def get_reward(cell):
-    """獲取獎勵值（移除障礙物獎勵，因為代理無法到達）"""
+def get_reward(cell, rule_data):
+    """獲取獎勵值（使用規則設定）"""
     if cell == GOAL:
-        return REWARD_GOAL
+        return rule_data['goalReward']
     elif cell == REWARD:
-        return REWARD_REWARD
+        return rule_data['bonusReward']
     elif cell == TRAP:
-        return REWARD_TRAP
+        return 0  # 陷阱不給予懲罰，只用於結束回合
     else:
-        return REWARD_DEFAULT
+        return rule_data['stepPenalty']
 
 
 def state_to_str(pos):
@@ -136,11 +143,22 @@ def get_epsilon(episode, total_episodes):
     return max(epsilon, EPSILON_END)
 
 
-def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True):
+def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True, rule_id=None):
     # 設定隨機種子以提高可重現性
     if seed is not None:
         np.random.seed(seed)
         print(f"隨機種子設定為: {seed}")
+    
+    # 載入規則
+    rule_data = load_rule(rule_id) if rule_id else {
+        'goalReward': 100,
+        'bonusReward': 10,
+        'trapPenalty': -50,
+        'stepPenalty': -1,
+        'wallPenalty': -1,
+        'stepDecay': 1.0,
+        'maxSteps': MAX_STEPS
+    }
     
     map_grid = load_map(map_path)
     validate_map(map_grid)  # 驗證地圖有效性
@@ -163,16 +181,19 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
     print(f"開始訓練：{episodes} 回合")
     print(f"學習率: {learning_rate}, 折扣因子: {discount_factor}")
     print(f"探索率: {epsilon_start} → {EPSILON_END} (衰減: {EPSILON_DECAY})")
+    print(f"使用規則：{rule_data}")
     
     for episode in range(1, episodes+1):
-        pos = find_start(map_grid)
+        # 每回合開始時重置地圖
+        current_map = copy.deepcopy(map_grid)
+        pos = find_start(current_map)
         episode_reward = 0
         current_epsilon = get_epsilon(episode, episodes)
         success = False
         last_cell = None
-        for step in range(1, MAX_STEPS+1):
+        for step in range(1, rule_data['maxSteps']+1):
             state = pos
-            valid_actions = get_valid_actions(map_grid, state)
+            valid_actions = get_valid_actions(current_map, state)
             
             # ε-greedy 策略
             if np.random.rand() < current_epsilon:
@@ -183,13 +204,21 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
                 best_actions = [a for a, q in zip(valid_actions, q_vals) if q == max_q]
                 action = np.random.choice(best_actions)
             
-            next_pos = move(map_grid, state, action)
-            cell = map_grid[next_pos[0]][next_pos[1]]
-            reward = get_reward(cell)
+            next_pos = move(current_map, state, action)
+            cell = current_map[next_pos[0]][next_pos[1]]
+            reward = get_reward(cell, rule_data)
+            
+            # 如果是獎勵格，取得後變為空格
+            if cell == REWARD:
+                current_map[next_pos[0]][next_pos[1]] = EMPTY
+            
+            # 應用步數衰減
+            reward = round(reward * (rule_data['stepDecay'] ** step))
+            
             episode_reward += reward
             last_cell = cell
             
-            next_valid_actions = get_valid_actions(map_grid, next_pos)
+            next_valid_actions = get_valid_actions(current_map, next_pos)
             next_qs = [q_table.get((next_pos[0], next_pos[1], a), 0.0) for a in next_valid_actions]
             max_next_q = max(next_qs) if next_qs else 0.0
             
@@ -210,7 +239,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
             })
             
             # 修正終止條件：目標或陷阱都終止回合
-            if is_terminal(cell) or step == MAX_STEPS:
+            if is_terminal(cell) or step == rule_data['maxSteps']:
                 if cell == GOAL:
                     success = True
                 break
@@ -257,6 +286,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=None, help='隨機種子（用於可重現性）')
     parser.add_argument('--optimistic', action='store_true', help='使用樂觀初始化')
     parser.add_argument('--strict_goal_reward_zero', action='store_true', default=True, help='沒到終點時分數歸零（預設開啟）')
+    parser.add_argument('--rule', type=str, default=None, help='規則ID')
     
     args = parser.parse_args()
     
@@ -265,4 +295,4 @@ if __name__ == '__main__':
         OPTIMISTIC_INIT = True
         print("使用樂觀初始化")
     
-    main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero) 
+    main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero, args.rule) 
