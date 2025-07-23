@@ -43,7 +43,7 @@ const AIAnalysis: React.FC = () => {
   const [autoAnalyze, setAutoAnalyze] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API_BASE}/train/jobs`).then(res => setJobs(res.data));
+    axios.get(`${API_BASE}/train/train/jobs`).then(res => setJobs(res.data));
   }, []);
 
   useEffect(() => {
@@ -53,15 +53,15 @@ const AIAnalysis: React.FC = () => {
     const info = jobs.find(j => j.job_id === selectedJob);
     setJobInfo(info);
     // 學習曲線（JSON）
-    axios.get(`${API_BASE}/analysis/${selectedJob}/curve`)
+    axios.get(`${API_BASE}/analysis/analysis/${selectedJob}/curve`)
       .then(res => setCurveData(res.data))
       .catch(() => setCurveData(null));
     // 熱力圖
-    axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`, { responseType: 'arraybuffer' })
+    axios.get(`${API_BASE}/analysis/analysis/${selectedJob}/heatmap`, { responseType: 'arraybuffer' })
       .then(res => setHeatmapUrl(`data:image/png;base64,${arrayBufferToBase64(res.data)}`))
       .catch(() => setHeatmapUrl(null));
     // 最優路徑
-    axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`, { responseType: 'arraybuffer' })
+    axios.get(`${API_BASE}/analysis/analysis/${selectedJob}/optimal-path`, { responseType: 'arraybuffer' })
       .then(res => setPathUrl(`data:image/png;base64,${arrayBufferToBase64(res.data)}`))
       .catch(() => setPathUrl(null));
     setLoading(false);
@@ -72,7 +72,7 @@ const AIAnalysis: React.FC = () => {
     setReport(null);
     setError(null);
     try {
-      const res = await axios.post(`${API_BASE}/analysis/${selectedJob}/analyze-and-save`);
+      const res = await axios.post(`${API_BASE}/analysis/analysis/${selectedJob}/analyze-and-save`);
       setReport(res.data.html || res.data.md || '分析完成，但無內容');
     } catch (e: any) {
       setError('分析失敗');
