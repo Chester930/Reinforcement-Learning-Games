@@ -504,69 +504,74 @@ const AIAnalysis: React.FC = () => {
                           </Typography>
                         )}
                       </Box>
-                      {/* 地圖資訊與預覽區塊 */}
+                      {/* 地圖資訊區塊 */}
                       <Box sx={{ minWidth: 220, flex: 1 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>🗺️ 地圖資訊</Typography>
                         {mapDataInfo ? (
-                          <Box>
-                            <Typography variant="body2" sx={{ color: '#333', mb: 2 }}>
-                              <b>地圖名稱：</b> {mapDataInfo.name}<br/>
-                              <b>尺寸：</b> {mapDataInfo.size ? `${mapDataInfo.size[0]} x ${mapDataInfo.size[1]}` : ''}<br/>
-                              <b>起點：</b> {mapDataInfo.start ? mapDataInfo.start.join(',') : ''}<br/>
-                              <b>終點：</b> {mapDataInfo.goal ? mapDataInfo.goal.join(',') : ''}<br/>
-                              <b>寶藏格：</b> {mapDataInfo.bonuses ? Object.keys(mapDataInfo.bonuses).join('、') : ''}<br/>
-                              <b>陷阱格：</b> {mapDataInfo.traps ? Object.keys(mapDataInfo.traps).join('、') : ''}
-                            </Typography>
-                            {/* 地圖預覽 */}
-                            {mapDataInfo.map && (
-                              <Paper sx={{ p: 1.5, display: 'inline-block', background: '#f5fbe7' }}>
-                                <Box sx={{ 
-                                  display: 'grid', 
-                                  gridTemplateColumns: `repeat(${mapDataInfo.map[0]?.length || 0}, 32px)`, 
-                                  gap: 0 
-                                }}>
-                                  {mapDataInfo.map.map((row: string[], rowIdx: number) =>
-                                    row.map((cell: string, colIdx: number) => {
-                                      let icon = null;
-                                      switch (cell) {
-                                        case 'S': icon = <span style={{ fontSize: 20 }}>🧑‍🌾</span>; break;
-                                        case 'G': icon = <span style={{ fontSize: 20 }}>🏁</span>; break;
-                                        case 'R': icon = <span style={{ fontSize: 20 }}>🪙</span>; break;
-                                        case 'T': icon = <span style={{ fontSize: 20 }}>🕳️</span>; break;
-                                        case '1': icon = <span style={{ fontSize: 20 }}>🪨</span>; break;
-                                        default: icon = null;
-                                      }
-                                      return (
-                                        <Box 
-                                          key={`${rowIdx}-${colIdx}`} 
-                                          sx={{ 
-                                            width: 32, 
-                                            height: 32, 
-                                            border: '1px solid #bdb76b', 
-                                            borderRadius: 1, 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            justifyContent: 'center', 
-                                            fontSize: 20, 
-                                            background: '#e6f9d5', 
-                                            m: 0.1 
-                                          }}
-                                        >
-                                          {icon}
-                                        </Box>
-                                      );
-                                    })
-                                  )}
-                                </Box>
-                              </Paper>
-                            )}
-                          </Box>
+                          <Typography variant="body2" sx={{ color: '#333' }}>
+                            <b>地圖名稱：</b> {mapDataInfo.name}<br/>
+                            <b>尺寸：</b> {mapDataInfo.size ? `${mapDataInfo.size[0]} x ${mapDataInfo.size[1]}` : ''}<br/>
+                            <b>起點：</b> {mapDataInfo.start ? mapDataInfo.start.join(',') : ''}<br/>
+                            <b>終點：</b> {mapDataInfo.goal ? mapDataInfo.goal.join(',') : ''}<br/>
+                            <b>寶藏格：</b> {mapDataInfo.bonuses ? Object.keys(mapDataInfo.bonuses).join('、') : ''}<br/>
+                            <b>陷阱格：</b> {mapDataInfo.traps ? Object.keys(mapDataInfo.traps).join('、') : ''}
+                          </Typography>
                         ) : (
                           <Typography variant="body2" sx={{ color: '#888' }}>
                             {jobConfig && !jobConfig.map_id ? 
                               '地圖ID缺失' : 
                               '無地圖資訊'
                             }
+                          </Typography>
+                        )}
+                      </Box>
+                      {/* 地圖預覽區塊 */}
+                      <Box sx={{ minWidth: 220, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', mt: -1, ml: -2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>🗺️ 地圖預覽</Typography>
+                        {mapDataInfo && mapDataInfo.map ? (
+                          <Paper sx={{ p: 1.5, display: 'inline-block', background: '#f5fbe7' }}>
+                            <Box sx={{ 
+                              display: 'grid', 
+                              gridTemplateColumns: `repeat(${mapDataInfo.map[0]?.length || 0}, 32px)`, 
+                              gap: 0
+                            }}>
+                              {mapDataInfo.map.map((row: string[], rowIdx: number) =>
+                                row.map((cell: string, colIdx: number) => {
+                                  let icon = null;
+                                  switch (cell) {
+                                    case 'S': icon = <span style={{ fontSize: 20 }}>🧑‍🌾</span>; break;
+                                    case 'G': icon = <span style={{ fontSize: 20 }}>🏁</span>; break;
+                                    case 'R': icon = <span style={{ fontSize: 20 }}>🪙</span>; break;
+                                    case 'T': icon = <span style={{ fontSize: 20 }}>🕳️</span>; break;
+                                    case '1': icon = <span style={{ fontSize: 20 }}>🪨</span>; break;
+                                    default: icon = null;
+                                  }
+                                  return (
+                                    <Box 
+                                      key={`${rowIdx}-${colIdx}`} 
+                                      sx={{ 
+                                        width: 32, 
+                                        height: 32, 
+                                        border: '1px solid #bdb76b', 
+                                        borderRadius: 1, 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        fontSize: 20, 
+                                        background: '#e6f9d5', 
+                                        m: 0.1 
+                                      }}
+                                    >
+                                      {icon}
+                                    </Box>
+                                  );
+                                })
+                              )}
+                            </Box>
+                          </Paper>
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#888' }}>
+                            無地圖預覽
                           </Typography>
                         )}
                       </Box>
