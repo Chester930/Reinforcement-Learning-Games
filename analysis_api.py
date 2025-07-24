@@ -79,7 +79,7 @@ def get_optimal_path(job_id: str):
     actions = ['up', 'down', 'left', 'right']
     for _ in range(100):
         visited.add(state)
-        q_vals = df[df['state'] == f"({state[0]},{state[1]})"]
+        q_vals = df[df['state'] == f"{state[0]},{state[1]}"]
         if q_vals.empty:
             break
         best = q_vals.loc[q_vals['value'].idxmax()]
@@ -202,7 +202,7 @@ def build_analysis_prompt(job_id, user_prompt):
                 visited = set()
                 for _ in range(100):
                     visited.add(state)
-                    q_vals = df[df['state'] == f"({state[0]},{state[1]})"]
+                    q_vals = df[df['state'] == f"{state[0]},{state[1]}"]
                     if q_vals.empty:
                         break
                     best = q_vals.loc[q_vals['value'].idxmax()]

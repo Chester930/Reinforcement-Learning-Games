@@ -23,6 +23,8 @@ class TrainRequest(BaseModel):
     job_name: str
     seed: Optional[int] = None  # 新增隨機種子參數
     optimistic: bool = False  # 新增樂觀初始化參數
+    lambda_param: Optional[float] = None  # 新增 SARSA(λ) 的 λ 參數
+    rule_id: Optional[str] = None # 新增規則 ID 參數
 
 class JobInfo(BaseModel):
     job_id: str
@@ -47,6 +49,12 @@ def start_train(req: TrainRequest):
         json.dump(config, f, ensure_ascii=False, indent=2)
     # 複製地圖檔到 job_dir
     shutil.copy(map_path, os.path.join(job_dir, 'map.json'))
+    # 複製 rule json
+    if config.get('rule_id'):
+        rule_src = os.path.join('rules', f"{config['rule_id']}.json")
+        rule_dst = os.path.join(job_dir, 'rule.json')
+        if os.path.exists(rule_src):
+            shutil.copyfile(rule_src, rule_dst)
     # 啟動訓練腳本
     algo_script = 'q_learning.py' if req.algorithm == 'q_learning' else 'sarsa.py'
     cmd = [
@@ -66,6 +74,10 @@ def start_train(req: TrainRequest):
     # 新增樂觀初始化參數
     if req.optimistic:
         cmd.append('--optimistic')
+    
+    # 新增 SARSA(λ) 的 λ 參數
+    if req.lambda_param is not None:
+        cmd.extend(['--lambda_param', str(req.lambda_param)])
     
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)

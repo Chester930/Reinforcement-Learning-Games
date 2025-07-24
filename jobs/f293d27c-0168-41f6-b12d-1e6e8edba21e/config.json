@@ -1,0 +1,15 @@
+{
+  "map_id": "3adeebaf-dc66-413c-a600-5a99c05fc279",
+  "algorithm": "q_learning",
+  "episodes": 500,
+  "learning_rate": 0.3,
+  "discount_factor": 0.99,
+  "epsilon": 1.0,
+  "job_name": "111",
+  "seed": null,
+  "optimistic": true,
+  "lambda_param": null,
+  "rule_id": "85f84f81-da19-44f7-8af7-e8d0fec956f9",
+  "job_id": "f293d27c-0168-41f6-b12d-1e6e8edba21e",
+  "created_at": "2025-07-24T14:52:46.441728"
+}

@@ -39,15 +39,7 @@ const Settings: React.FC = () => {
         <Typography variant="h5" sx={{ color: 'secondary.main', fontWeight: 600 }}>
           ⚙️ 系統參數調整
         </Typography>
-        <TextField
-          label="System Prompt"
-          name="system_prompt"
-          value={settings.system_prompt}
-          onChange={handleChange}
-          fullWidth
-          multiline
-          minRows={2}
-        />
+
         <TextField
           label="API Key"
           name="api_key"

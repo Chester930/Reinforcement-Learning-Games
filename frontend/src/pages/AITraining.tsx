@@ -18,6 +18,7 @@ const AITraining: React.FC = () => {
   const [epsilon, setEpsilon] = useState(1.0);  // 更新為初始探索率
   const [seed, setSeed] = useState<number | null>(null);
   const [optimistic, setOptimistic] = useState(false);
+  const [lambdaParam, setLambdaParam] = useState<number | null>(null);  // 新增 SARSA(λ) 的 λ 參數
   const [jobId, setJobId] = useState<string | null>(null);
   const [trainStatus, setTrainStatus] = useState<string | null>(null);
   const [trainError, setTrainError] = useState<string | null>(null);
@@ -71,6 +72,13 @@ const AITraining: React.FC = () => {
       }
       if (optimistic) {
         requestData.optimistic = optimistic;
+      }
+      if (lambdaParam !== null) {
+        requestData.lambda_param = lambdaParam;
+      }
+      // 新增: 傳遞 rule_id
+      if (selectedRule) {
+        requestData.rule_id = selectedRule;
       }
       
       const res = await axios.post(`${API_BASE}/train/train`, requestData);
@@ -170,6 +178,21 @@ const AITraining: React.FC = () => {
               sx={{ width: 150 }} 
               placeholder="留空為隨機"
             />
+            <TextField 
+              label="λ 參數 (SARSA)" 
+              type="number" 
+              value={lambdaParam || ''} 
+              onChange={e => setLambdaParam(e.target.value ? Number(e.target.value) : null)} 
+              sx={{ width: 150 }} 
+              placeholder="留空為預設值"
+              inputProps={{ step: 0.01, min: 0, max: 1 }}
+              disabled={algorithm !== 'sarsa'}
+            />
+            <Typography variant="caption" sx={{ color: '#888', ml: 1, maxWidth: 320, display: 'block' }}>
+              λ 參數控制資格跡（eligibility traces）衰減速度，範圍 0~1。<br/>
+              λ=0 為傳統 SARSA，λ=1 為回合更新。<br/>
+              較高值（如 0.8~0.95）可加速學習收斂，適合稀疏獎勵環境。
+            </Typography>
             <FormControlLabel
               control={<Switch checked={optimistic} onChange={e => setOptimistic(e.target.checked)} />}
               label="樂觀初始化"
@@ -191,13 +214,16 @@ const AITraining: React.FC = () => {
               <b>折扣因子 (γ)</b>：未來獎勵的重要性，0~1。越接近 1 越重視長遠獎勵，越接近 0 越重視即時獎勵。建議值：0.9~0.99。<br/>
               <b>初始探索率 (ε)</b>：AI 隨機探索的初始機率，會隨訓練逐漸衰減。較高值探索更多但學習慢，較低值利用已知知識但可能陷入局部最優。建議值：0.5~1.0。<br/>
               <b>隨機種子</b>：設定後可重現相同結果，適合實驗比較和調試。留空為隨機，每次訓練結果不同。<br/>
-              <b>樂觀初始化</b>：將 Q-Table 初始值設為較高值，鼓勵探索未知狀態，可能加速收斂但需要更多訓練回合。
+              <b>樂觀初始化</b>：將 Q-Table 初始值設為較高值，鼓勵探索未知狀態，可能加速收斂但需要更多訓練回合。<br/>
+              <b>λ 參數 (SARSA)</b>：SARSA(λ) 算法的核心參數，控制資格跡衰減速度。λ=0 為傳統 SARSA，λ=1 為回合更新，0.8~0.95 為推薦值。較高值能更有效地利用獎勵信號，加速學習收斂。
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【Q-Learning 與 SARSA 差異】</Typography>
             <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
               <b>Q-Learning</b>：離線型（off-policy），學習理論上最優策略，較積極探索，適合追求最短路徑。<br/>
               <b>SARSA</b>：在線型（on-policy），學習實際執行過的策略，較保守，適合風險較高或需穩健表現的情境。<br/>
-              <b>選擇建議：</b> 一般可先用 Q-Learning，若希望 AI 行為更穩健可選 SARSA。
+              <b>SARSA(λ)</b>：SARSA 的改進版本，使用資格跡（eligibility traces）實現多步更新。λ 參數控制資格跡衰減速度：λ=0 為單步更新，λ=1 為回合更新，0~1 之間為多步更新。較高的 λ 值能更有效地利用獎勵信號，加速學習。<br/>
+              <b>λ 參數建議值</b>：0.8~0.95，較高值適合稀疏獎勵環境，較低值適合密集獎勵環境。<br/>
+              <b>選擇建議：</b> 一般可先用 Q-Learning，若希望 AI 行為更穩健可選 SARSA，若希望加速學習可選 SARSA(λ)。
             </Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>【演算法特定參數建議】</Typography>
             <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const Home: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <Layout title="強化學習平台-叢林世界">
+    <Layout title="強化學習站-叢林世界">
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
         <Typography variant="h5" sx={{ color: 'secondary.main', fontWeight: 600 }}>
           歡迎來到 叢林世界！
@@ -34,7 +34,7 @@ const Home: React.FC = () => {
             系統說明
           </Typography>
           <Typography sx={{ fontSize: 18, color: '#555' }}>
-            本平台是一個以叢林世界為主題的互動式強化學習教學平台。你可以：<br />
+            此網站是一個以叢林世界為主題的互動式強化學習教學網站。你可以：<br />
             1. 自訂地圖，設計屬於自己的叢林迷宮。<br />
             2. 手動操作探險家，體驗強化學習規則。<br />
             3. 讓 AI 學習並自動挑戰地圖，觀察學習過程。<br />

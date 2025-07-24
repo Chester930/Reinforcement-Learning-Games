@@ -129,7 +129,7 @@ def get_reward(cell, rule_data):
 
 
 def state_to_str(pos):
-    return f"({pos[0]},{pos[1]})"
+    return f"{pos[0]},{pos[1]}"
 
 
 def get_epsilon(episode, total_episodes):

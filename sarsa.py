@@ -14,6 +14,7 @@ DISCOUNT_FACTOR = 0.95
 EPSILON_START = 1.0  # 初始探索率
 EPSILON_END = 0.01   # 最終探索率
 EPSILON_DECAY = 0.995  # 探索率衰減因子
+LAMBDA = 0.9  # SARSA(λ) 的 λ 參數，控制資格跡的衰減
 ACTIONS = ['up', 'down', 'left', 'right']
 
 # 地圖元素標記
@@ -23,6 +24,11 @@ REWARD = 'R'
 TRAP = 'T'
 OBSTACLE = '1'
 EMPTY = '0'
+
+# 將 state tuple 轉為字串
+def state_to_str(state):
+    """Convert a state tuple to a string for logging or CSV output."""
+    return f"{state[0]},{state[1]}"
 
 # Q-Table 初始化設定
 OPTIMISTIC_INIT = False  # 是否使用樂觀初始化
@@ -168,12 +174,16 @@ def get_reward(cell, rule_data):
     else:
         return rule_data['stepPenalty']
 
-def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True, rule_id=None):
-    """SARSA 主訓練函數"""
+def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, output_dir, seed=None, strict_goal_reward_zero=True, rule_id=None, lambda_param=None):
+    """SARSA(λ) 主訓練函數"""
     # 設定隨機種子以提高可重現性
     if seed is not None:
         np.random.seed(seed)
         print(f"隨機種子設定為: {seed}")
+    
+    # 使用傳入的 lambda 參數或預設值
+    lambda_value = lambda_param if lambda_param is not None else LAMBDA
+    print(f"使用 SARSA(λ) 算法，λ = {lambda_value}")
     
     # 載入規則
     rule_data = load_rule(rule_id) if rule_id else {
@@ -205,13 +215,14 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
     log_records = []
     episode_rewards = []  # 記錄每回合的總獎勵
     
-    print(f"開始 SARSA 訓練：{episodes} 回合")
+    print(f"開始 SARSA(λ) 訓練：{episodes} 回合")
     print(f"學習率: {learning_rate}, 折扣因子: {discount_factor}")
     print(f"探索率: {epsilon_start} → {EPSILON_END} (衰減: {EPSILON_DECAY})")
+    print(f"λ 參數: {lambda_value}")
     print(f"使用規則：{rule_data}")
     
     for episode in range(1, episodes+1):
-        # 每回合開始時重置地圖
+        # 每回合開始時重置地圖和資格跡
         current_map = copy.deepcopy(map_grid)
         pos = find_start(current_map)
         state = pos
@@ -219,6 +230,10 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
         current_epsilon = get_epsilon(episode, episodes)
         success = False
         last_cell = None
+        
+        # 初始化資格跡 (eligibility traces)
+        eligibility_traces = {}
+        
         valid_actions = get_valid_actions(current_map, state)
         # 初始動作選擇
         if np.random.rand() < current_epsilon:
@@ -260,9 +275,20 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
                 next_action = None
                 next_q = 0.0
             
-            # SARSA 更新公式
+            # SARSA(λ) 更新公式
+            current_q = q_table.get((state[0], state[1], action), 0.0)
+            td_error = reward + discount_factor * next_q - current_q
+            
+            # 更新當前狀態-動作對的資格跡
             q_key = (state[0], state[1], action)
-            q_table[q_key] = q_table.get(q_key, 0.0) + learning_rate * (reward + discount_factor * next_q - q_table.get(q_key, 0.0))
+            eligibility_traces[q_key] = eligibility_traces.get(q_key, 0.0) + 1.0
+            
+            # 更新所有狀態-動作對的 Q 值和資格跡
+            for (s_i, s_j, a), trace in eligibility_traces.items():
+                if trace > 0:
+                    q_table[(s_i, s_j, a)] = q_table.get((s_i, s_j, a), 0.0) + learning_rate * td_error * trace
+                    # 衰減資格跡
+                    eligibility_traces[(s_i, s_j, a)] = lambda_value * discount_factor * trace
             
             log_records.append({
                 'episode': episode,
@@ -273,6 +299,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
                 'next_state': state_to_str(next_pos),
                 'done': is_terminal(cell),
                 'epsilon': current_epsilon,
+                'lambda_param': lambda_value,
                 'success': cell == GOAL
             })
             
@@ -305,7 +332,7 @@ def main(map_path, episodes, learning_rate, discount_factor, epsilon_start, outp
     
     # 輸出訓練統計
     final_avg_reward = np.mean(episode_rewards[-100:]) if len(episode_rewards) >= 100 else np.mean(episode_rewards)
-    print(f"\nSARSA 訓練完成！")
+    print(f"\nSARSA(λ) 訓練完成！")
     print(f"最終 100 回合平均獎勵: {final_avg_reward:.2f}")
     print(f"總回合數: {len(episode_rewards)}")
 
@@ -322,6 +349,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimistic', action='store_true', help='使用樂觀初始化')
     parser.add_argument('--strict_goal_reward_zero', action='store_true', default=True, help='沒到終點時分數歸零（預設開啟）')
     parser.add_argument('--rule', type=str, default=None, help='規則ID')
+    parser.add_argument('--lambda_param', type=float, default=LAMBDA, help='SARSA(λ) 的 λ 參數')
     
     args = parser.parse_args()
     
@@ -331,7 +359,7 @@ if __name__ == '__main__':
         print("使用樂觀初始化")
     
     try:
-        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero, args.rule)
+        main(args.map, args.episodes, args.learning_rate, args.discount_factor, args.epsilon, args.output, args.seed, args.strict_goal_reward_zero, args.rule, args.lambda_param)
     except Exception as e:
         print(f"訓練過程中發生錯誤: {str(e)}")
         exit(1) 

@@ -15,6 +15,7 @@ import {
   Legend,
 } from 'chart.js';
 import AIAnalysisPathSim from './AIAnalysisPathSim';
+import LearningCurveChart from './LearningCurveChart';
 
 // 簡單的 markdown 轉 HTML 函數
 const markdownToHtml = (markdown: string): string => {
@@ -46,6 +47,10 @@ const AIAnalysis: React.FC = () => {
   const [mapData, setMapData] = useState<string[][] | null>(null);
   const [optimalPath, setOptimalPath] = useState<[number, number][] | null>(null);
   const [verifyResult, setVerifyResult] = useState<{verify_ok: boolean, verify_output: string} | null>(null);
+  const [jobConfig, setJobConfig] = useState<any>(null);
+  const [ruleData, setRuleData] = useState<any>(null);
+  const [mapDataInfo, setMapDataInfo] = useState<any>(null);
+  const [extractedChartData, setExtractedChartData] = useState<{ rewards: number[]; steps: number[] } | null>(null);
 
   const handleAnalyze = useCallback(async () => {
     if (!selectedJob) return;
@@ -123,7 +128,25 @@ const AIAnalysis: React.FC = () => {
         } catch (e) {
           setVerifyResult(null);
         }
-        // 先嘗試載入分析報告
+        // 先嘗試載入 analysis.html
+        try {
+          const htmlRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/analysis.html`);
+          if (htmlRes.data && typeof htmlRes.data === 'string' && htmlRes.data.includes('<html')) {
+            setReport(htmlRes.data);
+            setShowReanalyze(true);
+            return;
+          }
+        } catch (e) { /* 忽略找不到 html */ }
+        // fallback: 載入 analysis.md
+        try {
+          const mdRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/analysis.md`);
+          if (mdRes.data && typeof mdRes.data === 'string') {
+            setReport(markdownToHtml(mdRes.data));
+            setShowReanalyze(true);
+            return;
+          }
+        } catch (e) { /* 忽略找不到 md */ }
+        // fallback: 舊邏輯
         try {
           const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
           if (reportRes.data && reportRes.data.content) {
@@ -142,6 +165,31 @@ const AIAnalysis: React.FC = () => {
             setError('載入分析報告失敗');
           }
         }
+        // 載入 config.json
+        axios.get(`${API_BASE}/jobs/${selectedJob}/config.json`).then(res => {
+          setJobConfig(res.data);
+          // 優先載入 job 專屬 rule.json
+          axios.get(`${API_BASE}/jobs/${selectedJob}/rule.json`).then(ruleRes => {
+            setRuleData(ruleRes.data);
+          }).catch(() => {
+            // 若不存在則 fallback 到 rules 目錄
+            if (res.data.rule_id) {
+              axios.get(`${API_BASE}/rules/rules/${res.data.rule_id}`).then(ruleRes2 => {
+                setRuleData(ruleRes2.data);
+              }).catch(() => setRuleData(null));
+            } else {
+              setRuleData(null);
+            }
+          });
+          // 載入地圖資訊
+          if (res.data.map_id) {
+            axios.get(`${API_BASE}/maps/maps/${res.data.map_id}`).then(mapRes => {
+              setMapDataInfo(mapRes.data);
+            }).catch(() => setMapDataInfo(null));
+          } else {
+            setMapDataInfo(null);
+          }
+        }).catch(() => { setJobConfig(null); setRuleData(null); setMapDataInfo(null); });
       } catch (error) {
         console.error('載入數據時發生錯誤:', error);
       } finally {
@@ -150,6 +198,46 @@ const AIAnalysis: React.FC = () => {
     };
     loadData();
   }, [selectedJob, jobs, handleAnalyze]);
+
+  useEffect(() => {
+    // 解析 AI 回覆中的學習曲線資料
+    const tempDiv = document.createElement('div');
+    if (report) {
+      tempDiv.innerHTML = report;
+      const el = tempDiv.querySelector('#learningCurveData');
+      if (el) {
+        try {
+          const rewards = JSON.parse(el.getAttribute('data-rewards') || '[]');
+          const steps = JSON.parse(el.getAttribute('data-steps') || '[]');
+          if (Array.isArray(rewards) && Array.isArray(steps) && rewards.length && steps.length) {
+            setExtractedChartData({ rewards, steps });
+          } else {
+            setExtractedChartData(null);
+          }
+        } catch {
+          setExtractedChartData(null);
+        }
+      } else {
+        setExtractedChartData(null);
+      }
+      // 自動提取 <style> 並插入 <head>
+      const styleMatch = report.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      if (styleMatch) {
+        let styleTag = document.getElementById('ai-analysis-style') as HTMLStyleElement | null;
+        if (!styleTag) {
+          styleTag = document.createElement('style');
+          styleTag.id = 'ai-analysis-style';
+          document.head.appendChild(styleTag);
+        }
+        styleTag.innerHTML = styleMatch[1];
+      }
+    } else {
+      setExtractedChartData(null);
+      // 移除舊的 style
+      const oldStyle = document.getElementById('ai-analysis-style');
+      if (oldStyle) oldStyle.remove();
+    }
+  }, [report]);
 
   const handleReanalyze = async () => {
     if (!selectedJob) return;
@@ -213,6 +301,23 @@ const AIAnalysis: React.FC = () => {
       },
     ],
   } : null;
+
+  // 嘗試從 report 解析出學習曲線資料
+  let rewards: number[] | null = null;
+  let steps: number[] | null = null;
+  if (report) {
+    try {
+      // 嘗試直接解析 JSON 區塊
+      const match = report.match(/"rewards"\s*:\s*\[[\s\S]*?\]/);
+      const match2 = report.match(/"steps"\s*:\s*\[[\s\S]*?\]/);
+      if (match && match2) {
+        rewards = JSON.parse('{' + match[0] + '}').rewards;
+        steps = JSON.parse('{' + match2[0] + '}').steps;
+      }
+    } catch (e) {
+      // 忽略解析錯誤
+    }
+  }
 
   return (
     <Layout title="AI 分析">
@@ -295,29 +400,57 @@ const AIAnalysis: React.FC = () => {
 
                 {report && (
                   <Paper sx={{ p: 3, background: '#fff', borderRadius: 2, mb: 3 }}>
-                    {/* 學習曲線圖表 */}
-                    {curveData && chartData && (
+                    <Box sx={{ mb: 3, p: 2, background: '#e3f2fd', borderRadius: 2, display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      <Box sx={{ minWidth: 220, flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>🛠️ 訓練參數</Typography>
+                        {jobConfig ? (
+                          <Typography variant="body2" sx={{ color: '#333' }}>
+                            <b>演算法：</b> {jobConfig.algorithm}<br/>
+                            <b>回合數：</b> {jobConfig.episodes}<br/>
+                            <b>學習率：</b> {jobConfig.learning_rate}<br/>
+                            <b>折扣因子：</b> {jobConfig.discount_factor}<br/>
+                            <b>初始探索率：</b> {jobConfig.epsilon}<br/>
+                            <b>樂觀初始化：</b> {jobConfig.optimistic ? '是' : '否'}<br/>
+                            {jobConfig.seed !== null && <><b>隨機種子：</b> {jobConfig.seed}<br/></>}
+                            {jobConfig.lambda_param !== undefined && <><b>λ 參數：</b> {jobConfig.lambda_param}<br/></>}
+                          </Typography>
+                        ) : <Typography variant="body2" sx={{ color: '#888' }}>無訓練參數資訊</Typography>}
+                      </Box>
+                      {/* 規則細節區塊 */}
+                      <Box sx={{ minWidth: 220, flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>🎮 規則細節</Typography>
+                        {ruleData ? (
+                          <Typography variant="body2" sx={{ color: '#333' }}>
+                            <b>寶藏得分：</b> {ruleData.bonusReward}<br/>
+                            <b>步數懲罰：</b> {ruleData.stepPenalty}<br/>
+                            <b>步數衰減：</b> {ruleData.stepDecay}<br/>
+                            <b>終點獎勵：</b> {ruleData.goalReward}<br/>
+                            <b>撞牆懲罰：</b> {ruleData.wallPenalty}<br/>
+                            <b>最大步數：</b> {ruleData.maxSteps}
+                          </Typography>
+                        ) : <Typography variant="body2" sx={{ color: '#888' }}>無規則資訊</Typography>}
+                      </Box>
+                      <Box sx={{ minWidth: 220, flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>🗺️ 地圖資訊</Typography>
+                        {mapDataInfo ? (
+                          <Typography variant="body2" sx={{ color: '#333' }}>
+                            <b>地圖名稱：</b> {mapDataInfo.name}<br/>
+                            <b>尺寸：</b> {mapDataInfo.size ? `${mapDataInfo.size[0]} x ${mapDataInfo.size[1]}` : ''}<br/>
+                            <b>起點：</b> {mapDataInfo.start ? mapDataInfo.start.join(',') : ''}<br/>
+                            <b>終點：</b> {mapDataInfo.goal ? mapDataInfo.goal.join(',') : ''}<br/>
+                            <b>寶藏格：</b> {mapDataInfo.bonuses ? Object.keys(mapDataInfo.bonuses).join('、') : ''}<br/>
+                            <b>陷阱格：</b> {mapDataInfo.traps ? Object.keys(mapDataInfo.traps).join('、') : ''}
+                          </Typography>
+                        ) : <Typography variant="body2" sx={{ color: '#888' }}>無地圖資訊</Typography>}
+                      </Box>
+                    </Box>
+                    {/* 學習曲線圖表（自動解析 data-rewards/data-steps） */}
+                    {extractedChartData && (
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
                           📈 學習曲線分析
                         </Typography>
-                        <Box sx={{ mb: 2 }}>
-                          <Line data={chartData} options={{
-                            ...chartOptions,
-                            scales: {
-                              y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Total Reward' } },
-                              y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Steps' }, grid: { drawOnChartArea: false } },
-                            },
-                          }} />
-                        </Box>
-                        <Box sx={{ p: 2, background: '#f0f8ff', borderRadius: 1 }}>
-                          <Typography variant="body2" sx={{ color: '#555' }}>
-                            <b>📊 學習曲線說明：</b><br/>
-                            • <b>藍線（Total Reward）</b>：每回合的總獎勵，越高表示AI表現越好<br/>
-                            • <b>橙線（Steps）</b>：每回合的步數，越低表示AI找到更短的路徑<br/>
-                            • <b>學習趨勢</b>：初期波動大，後期趨於穩定表示AI已學會最佳策略
-                          </Typography>
-                        </Box>
+                        <LearningCurveChart rewards={extractedChartData.rewards} steps={extractedChartData.steps} />
                       </Box>
                     )}
 
@@ -343,14 +476,12 @@ const AIAnalysis: React.FC = () => {
                     )}
 
                     {/* 最優路徑 */}
-                    {pathUrl && (
+                    {mapData && optimalPath && (
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
-                          🎯 最優路徑分析
+                          🎯 最優路徑分析（動畫模擬）
                         </Typography>
-                        <Box sx={{ mb: 2 }}>
-                          <img src={pathUrl} alt="最優路徑" style={{ maxWidth: '100%', maxHeight: 400, background: '#fff', border: '1px solid #ddd', borderRadius: 4 }} />
-                        </Box>
+                        <AIAnalysisPathSim map={mapData} path={optimalPath} />
                         <Box sx={{ p: 2, background: '#f0fff0', borderRadius: 1 }}>
                           <Typography variant="body2" sx={{ color: '#555' }}>
                             <b>🎯 最優路徑說明：</b><br/>
@@ -403,9 +534,6 @@ const AIAnalysis: React.FC = () => {
             </Box>
           )}
         </Paper>
-        {mapData && optimalPath && (
-          <AIAnalysisPathSim map={mapData} path={optimalPath} />
-        )}
       </Box>
     </Layout>
   );

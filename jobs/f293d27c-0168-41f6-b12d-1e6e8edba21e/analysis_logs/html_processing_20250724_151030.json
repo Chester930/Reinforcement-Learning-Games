@@ -1,0 +1,8 @@
+{
+  "timestamp": "20250724_151030",
+  "job_id": "f293d27c-0168-41f6-b12d-1e6e8edba21e",
+  "html_source": "ai_generated",
+  "has_html_block": true,
+  "html_content_length": 13192,
+  "html_content_preview": "<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習訓練分析報告</title>\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n    <style>\n        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');\n\n        body {\n            font-family: 'Noto Sans TC', sans-serif;\n            background-color: #f4f7f9;\n            color: #333;\n            margin: 0;\n            ..."
+}
