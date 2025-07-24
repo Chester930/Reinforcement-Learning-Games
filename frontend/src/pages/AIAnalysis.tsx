@@ -41,6 +41,7 @@ const AIAnalysis: React.FC = () => {
   const [pathUrl, setPathUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
+  const [reportType, setReportType] = useState<'html' | 'md' | 'none'>('none');
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReanalyze, setShowReanalyze] = useState(false);
@@ -89,109 +90,170 @@ const AIAnalysis: React.FC = () => {
   useEffect(() => {
     if (!selectedJob) return;
     setLoading(true);
-    setCurveData(null); setHeatmapUrl(null); setPathUrl(null); setReport(null); setError(null);
+    // 強制清空所有狀態，避免快取
+    setCurveData(null); 
+    setHeatmapUrl(''); 
+    setPathUrl(''); 
+    setReport(null); 
+    setError(null);
+    setReportType('none');
     setShowReanalyze(false);
-    setMapData(null); setOptimalPath(null);
+    setMapData(null); 
+    setOptimalPath(null);
     setVerifyResult(null);
+    setJobConfig(null);
+    setRuleData(null);
+    setMapDataInfo(null);
+    setExtractedChartData(null);
+    
     const info = jobs.find(j => j.job_id === selectedJob);
     setJobInfo(info);
 
     const loadData = async () => {
+      if (!selectedJob) return;
+
+      setLoading(true);
+      // 清空狀態，避免殘影
+      setReport(null);
+      setReportType('none');
+      setHeatmapUrl('');
+      setCurveData(null);
+      setPathUrl('');
+      setJobConfig(null);
+      setRuleData(null);
+      setMapDataInfo(null);
+      setExtractedChartData(null);
+
       try {
-        // 並行載入所有數據
-        const [curveRes, heatmapRes, pathRes] = await Promise.allSettled([
-          axios.get(`${API_BASE}/analysis/${selectedJob}/curve`),
-          axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`),
-          axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`)
+        // 並行載入分析數據
+        const [learningRes, heatmapRes] = await Promise.all([
+          axios.get(`${API_BASE}/analysis/${selectedJob}/learning_curve`).catch(() => null),
+          axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`).catch(() => null),
         ]);
-        if (curveRes.status === 'fulfilled') {
-          setCurveData(curveRes.value.data);
+
+        if (learningRes?.data) setCurveData(learningRes.data);
+        if (heatmapRes?.data?.heatmap_png_base64) {
+          setHeatmapUrl(`data:image/png;base64,${heatmapRes.data.heatmap_png_base64}`);
         }
-        if (heatmapRes.status === 'fulfilled' && heatmapRes.value.data.heatmap_png_base64) {
-          setHeatmapUrl(`data:image/png;base64,${heatmapRes.value.data.heatmap_png_base64}`);
-        }
-        if (pathRes.status === 'fulfilled' && pathRes.value.data.path_png_base64) {
-          setPathUrl(`data:image/png;base64,${pathRes.value.data.path_png_base64}`);
-        }
-        // 載入 map.json
-        axios.get(`${API_BASE}/jobs/${selectedJob}/map.json`).then(res => {
-          if (res.data && res.data.map) setMapData(res.data.map);
-        });
-        // 載入 optimal-path
-        axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`).then(res => {
-          if (res.data && res.data.optimal_path) setOptimalPath(res.data.optimal_path);
-        });
-        // 載入自動驗證結果
+
+        // 載入 optimal path
         try {
-          const verifyRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/verify`);
-          setVerifyResult(verifyRes.data);
-        } catch (e) {
-          setVerifyResult(null);
+          const pathRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/optimal_path`);
+          if (pathRes.data?.optimal_path_png_base64) {
+            setPathUrl(`data:image/png;base64,${pathRes.data.optimal_path_png_base64}`);
+          }
+        } catch (error) {
+          console.error('載入最佳路徑失敗:', error);
         }
-        // 先嘗試載入 analysis.html
+
+        // 載入 job 配置 (必須先載入，其他資料會依賴它)
+        let configData = null;
+        try {
+          const configRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/config.json`);
+          if (configRes.data) {
+            configData = configRes.data;
+            setJobConfig(configData);
+            console.log('✅ 成功載入 job 配置:', configData);
+          }
+        } catch (error) {
+          console.error('❌ 載入 job 配置失敗:', error);
+        }
+
+        // 載入 rule 數據，優先從 job 目錄載入
+        try {
+          let ruleRes = null;
+          try {
+            ruleRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/rule.json`);
+            console.log('✅ 從 job 目錄載入 rule.json');
+          } catch {
+            // fallback 到 rules 目錄
+            if (configData?.rule_id) {
+              try {
+                ruleRes = await axios.get(`${API_BASE}/rules/${configData.rule_id}`);
+                console.log('✅ 從 rules 目錄載入規則:', configData.rule_id);
+              } catch (ruleError) {
+                console.error('❌ 從 rules 目錄載入規則失敗:', ruleError);
+              }
+            } else {
+              console.log('⚠️ 無 rule_id，跳過規則載入');
+            }
+          }
+          if (ruleRes?.data) {
+            setRuleData(ruleRes.data);
+            console.log('✅ 成功設定 rule 數據');
+          }
+        } catch (error) {
+          console.error('❌ 載入 rule 數據失敗:', error);
+        }
+
+        // 載入 map 數據，優先從 job 目錄載入
+        try {
+          let mapRes = null;
+          try {
+            // 優先從 job 目錄載入 map.json
+            mapRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/map.json`);
+            console.log('✅ 從 job 目錄載入 map.json');
+          } catch {
+            // fallback 到 maps API
+            if (configData?.map_id) {
+              try {
+                mapRes = await axios.get(`${API_BASE}/maps/${configData.map_id}`);
+                console.log('✅ 從 maps 目錄載入地圖:', configData.map_id);
+              } catch (mapError) {
+                console.error('❌ 從 maps 目錄載入地圖失敗:', mapError);
+              }
+            } else {
+              console.log('⚠️ 無 map_id，跳過 maps API 載入');
+            }
+          }
+          if (mapRes?.data) {
+            setMapDataInfo(mapRes.data);
+            console.log('✅ 成功設定 map 數據');
+          }
+        } catch (error) {
+          console.error('❌ 載入 map 數據失敗:', error);
+        }
+
+        // 載入分析報告 - 優先載入 analysis.html，fallback 到 /report API
+        let reportLoaded = false;
+        
+        // 1. 優先載入 analysis.html
         try {
           const htmlRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/analysis.html`);
-          if (htmlRes.data && typeof htmlRes.data === 'string' && htmlRes.data.includes('<html')) {
-            setReport(htmlRes.data);
-            setShowReanalyze(true);
-            return;
+          if (htmlRes.data && htmlRes.data.html_content) {
+            setReport(htmlRes.data.html_content);
+            setReportType('html');
+            reportLoaded = true;
+            console.log('✅ 成功載入 analysis.html');
           }
-        } catch (e) { /* 忽略找不到 html */ }
-        // fallback: 載入 analysis.md
-        try {
-          const mdRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/analysis.md`);
-          if (mdRes.data && typeof mdRes.data === 'string') {
-            setReport(markdownToHtml(mdRes.data));
-            setShowReanalyze(true);
-            return;
-          }
-        } catch (e) { /* 忽略找不到 md */ }
-        // fallback: 舊邏輯
-        try {
-          const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
-          if (reportRes.data && reportRes.data.content) {
-            const htmlContent = markdownToHtml(reportRes.data.content);
-            setReport(htmlContent);
-            setShowReanalyze(true);
-          } else {
-            // 沒有現有報告，自動分析
-            await handleAnalyze();
-          }
-        } catch (error: any) {
-          if (error.response && error.response.status === 404) {
-            // 沒有現有報告，自動分析
-            await handleAnalyze();
-          } else {
-            setError('載入分析報告失敗');
+        } catch (error) {
+          console.log('❌ analysis.html 載入失敗，嘗試 fallback');
+        }
+
+        // 2. fallback: /report API（只有在 html 載入失敗時才執行）
+        if (!reportLoaded) {
+          try {
+            const reportRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/report`);
+            if (reportRes.data && reportRes.data.content) {
+              // 簡單將 markdown 轉為 HTML
+              const htmlContent = reportRes.data.content
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+              setReport(`<html><body>${htmlContent}</body></html>`);
+              setReportType('md');
+              console.log('⚠️ 使用 /report API fallback');
+            }
+          } catch (error) {
+            console.log('❌ 所有分析報告載入方式都失敗');
           }
         }
-        // 載入 config.json
-        axios.get(`${API_BASE}/jobs/${selectedJob}/config.json`).then(res => {
-          setJobConfig(res.data);
-          // 優先載入 job 專屬 rule.json
-          axios.get(`${API_BASE}/jobs/${selectedJob}/rule.json`).then(ruleRes => {
-            setRuleData(ruleRes.data);
-          }).catch(() => {
-            // 若不存在則 fallback 到 rules 目錄
-            if (res.data.rule_id) {
-              axios.get(`${API_BASE}/rules/rules/${res.data.rule_id}`).then(ruleRes2 => {
-                setRuleData(ruleRes2.data);
-              }).catch(() => setRuleData(null));
-            } else {
-              setRuleData(null);
-            }
-          });
-          // 載入地圖資訊
-          if (res.data.map_id) {
-            axios.get(`${API_BASE}/maps/maps/${res.data.map_id}`).then(mapRes => {
-              setMapDataInfo(mapRes.data);
-            }).catch(() => setMapDataInfo(null));
-          } else {
-            setMapDataInfo(null);
-          }
-        }).catch(() => { setJobConfig(null); setRuleData(null); setMapDataInfo(null); });
+
       } catch (error) {
-        console.error('載入數據時發生錯誤:', error);
+        console.error('載入分析數據失敗:', error);
       } finally {
         setLoading(false);
       }
@@ -413,6 +475,11 @@ const AIAnalysis: React.FC = () => {
                             <b>樂觀初始化：</b> {jobConfig.optimistic ? '是' : '否'}<br/>
                             {jobConfig.seed !== null && <><b>隨機種子：</b> {jobConfig.seed}<br/></>}
                             {jobConfig.lambda_param !== undefined && <><b>λ 參數：</b> {jobConfig.lambda_param}<br/></>}
+                            {!jobConfig.rule_id && (
+                              <Typography variant="caption" sx={{ color: '#ff9800', display: 'block', mt: 1 }}>
+                                ⚠️ 舊版訓練任務，未保存規則ID
+                              </Typography>
+                            )}
                           </Typography>
                         ) : <Typography variant="body2" sx={{ color: '#888' }}>無訓練參數資訊</Typography>}
                       </Box>
@@ -428,20 +495,80 @@ const AIAnalysis: React.FC = () => {
                             <b>撞牆懲罰：</b> {ruleData.wallPenalty}<br/>
                             <b>最大步數：</b> {ruleData.maxSteps}
                           </Typography>
-                        ) : <Typography variant="body2" sx={{ color: '#888' }}>無規則資訊</Typography>}
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#888' }}>
+                            {jobConfig && !jobConfig.rule_id ? 
+                              '舊版任務無規則記錄' : 
+                              '無規則資訊'
+                            }
+                          </Typography>
+                        )}
                       </Box>
+                      {/* 地圖資訊與預覽區塊 */}
                       <Box sx={{ minWidth: 220, flex: 1 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>🗺️ 地圖資訊</Typography>
                         {mapDataInfo ? (
-                          <Typography variant="body2" sx={{ color: '#333' }}>
-                            <b>地圖名稱：</b> {mapDataInfo.name}<br/>
-                            <b>尺寸：</b> {mapDataInfo.size ? `${mapDataInfo.size[0]} x ${mapDataInfo.size[1]}` : ''}<br/>
-                            <b>起點：</b> {mapDataInfo.start ? mapDataInfo.start.join(',') : ''}<br/>
-                            <b>終點：</b> {mapDataInfo.goal ? mapDataInfo.goal.join(',') : ''}<br/>
-                            <b>寶藏格：</b> {mapDataInfo.bonuses ? Object.keys(mapDataInfo.bonuses).join('、') : ''}<br/>
-                            <b>陷阱格：</b> {mapDataInfo.traps ? Object.keys(mapDataInfo.traps).join('、') : ''}
+                          <Box>
+                            <Typography variant="body2" sx={{ color: '#333', mb: 2 }}>
+                              <b>地圖名稱：</b> {mapDataInfo.name}<br/>
+                              <b>尺寸：</b> {mapDataInfo.size ? `${mapDataInfo.size[0]} x ${mapDataInfo.size[1]}` : ''}<br/>
+                              <b>起點：</b> {mapDataInfo.start ? mapDataInfo.start.join(',') : ''}<br/>
+                              <b>終點：</b> {mapDataInfo.goal ? mapDataInfo.goal.join(',') : ''}<br/>
+                              <b>寶藏格：</b> {mapDataInfo.bonuses ? Object.keys(mapDataInfo.bonuses).join('、') : ''}<br/>
+                              <b>陷阱格：</b> {mapDataInfo.traps ? Object.keys(mapDataInfo.traps).join('、') : ''}
+                            </Typography>
+                            {/* 地圖預覽 */}
+                            {mapDataInfo.map && (
+                              <Paper sx={{ p: 1.5, display: 'inline-block', background: '#f5fbe7' }}>
+                                <Box sx={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: `repeat(${mapDataInfo.map[0]?.length || 0}, 32px)`, 
+                                  gap: 0 
+                                }}>
+                                  {mapDataInfo.map.map((row: string[], rowIdx: number) =>
+                                    row.map((cell: string, colIdx: number) => {
+                                      let icon = null;
+                                      switch (cell) {
+                                        case 'S': icon = <span style={{ fontSize: 20 }}>🧑‍🌾</span>; break;
+                                        case 'G': icon = <span style={{ fontSize: 20 }}>🏁</span>; break;
+                                        case 'R': icon = <span style={{ fontSize: 20 }}>🪙</span>; break;
+                                        case 'T': icon = <span style={{ fontSize: 20 }}>🕳️</span>; break;
+                                        case '1': icon = <span style={{ fontSize: 20 }}>🪨</span>; break;
+                                        default: icon = null;
+                                      }
+                                      return (
+                                        <Box 
+                                          key={`${rowIdx}-${colIdx}`} 
+                                          sx={{ 
+                                            width: 32, 
+                                            height: 32, 
+                                            border: '1px solid #bdb76b', 
+                                            borderRadius: 1, 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            fontSize: 20, 
+                                            background: '#e6f9d5', 
+                                            m: 0.1 
+                                          }}
+                                        >
+                                          {icon}
+                                        </Box>
+                                      );
+                                    })
+                                  )}
+                                </Box>
+                              </Paper>
+                            )}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#888' }}>
+                            {jobConfig && !jobConfig.map_id ? 
+                              '地圖ID缺失' : 
+                              '無地圖資訊'
+                            }
                           </Typography>
-                        ) : <Typography variant="body2" sx={{ color: '#888' }}>無地圖資訊</Typography>}
+                        )}
                       </Box>
                     </Box>
                     {/* 學習曲線圖表（自動解析 data-rewards/data-steps） */}
@@ -455,13 +582,33 @@ const AIAnalysis: React.FC = () => {
                     )}
 
                     {/* Q-Table 熱力圖 */}
-                    {heatmapUrl && (
+                    {(heatmapUrl && heatmapUrl.length > 1000) ? (
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
                           🔥 Q-Table 熱力圖分析
                         </Typography>
                         <Box sx={{ mb: 2 }}>
                           <img src={heatmapUrl} alt="熱力圖" style={{ maxWidth: '100%', maxHeight: 400, background: '#fff', border: '1px solid #ddd', borderRadius: 4 }} />
+                        </Box>
+                        <Box sx={{ p: 2, background: '#fff5f5', borderRadius: 1 }}>
+                          <Typography variant="body2" sx={{ color: '#555' }}>
+                            <b>🔥 熱力圖說明：</b><br/>
+                            • <b>顏色深淺</b>：代表Q值大小，越深表示該狀態-動作對的價值越高<br/>
+                            • <b>行（State）</b>：不同的位置狀態<br/>
+                            • <b>列（Action）</b>：四個方向動作（上、下、左、右）<br/>
+                            • <b>學習效果</b>：顏色分布越明顯表示AI學習效果越好
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
+                          🔥 Q-Table 熱力圖分析
+                        </Typography>
+                        <Box sx={{ mb: 2, minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', border: '1px solid #eee', borderRadius: 4 }}>
+                          <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 600 }}>
+                            Q-Table 熱力圖資料異常，無法顯示。請檢查訓練結果或重新分析。
+                          </Typography>
                         </Box>
                         <Box sx={{ p: 2, background: '#fff5f5', borderRadius: 1 }}>
                           <Typography variant="body2" sx={{ color: '#555' }}>
@@ -500,7 +647,22 @@ const AIAnalysis: React.FC = () => {
                         📝 AI 深度分析報告
                       </Typography>
                       <Box sx={{ p: 3, background: '#fffbe7', borderRadius: 2, border: '1px solid #ffeaa7' }}>
-                        <div dangerouslySetInnerHTML={{ __html: report }} />
+                        {report ? (
+                          <div dangerouslySetInnerHTML={{ __html: report }} />
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#666', textAlign: 'center', py: 4 }}>
+                            分析報告載入中，或尚未生成分析報告...<br/>
+                            <Button 
+                              variant="contained" 
+                              color="primary" 
+                              size="small" 
+                              onClick={handleAnalyze}
+                              sx={{ mt: 2 }}
+                            >
+                              🔄 生成分析報告
+                            </Button>
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                   </Paper>

@@ -33,9 +33,34 @@ def get_qtable_heatmap(job_id: str):
     qtable_path = os.path.join(JOBS_DIR, job_id, 'q_table.csv')
     if not os.path.exists(qtable_path):
         raise HTTPException(status_code=404, detail='Q-Table not found')
+    
     df = pd.read_csv(qtable_path)
+    
+    # 檢查 Q-Table 是否為空
+    if df.empty:
+        raise HTTPException(status_code=400, detail='Q-Table is empty')
+    
+    # 檢查必要的欄位
+    required_columns = ['state', 'action', 'value']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise HTTPException(status_code=400, detail=f'Q-Table missing columns: {missing_columns}')
+    
+    # 檢查是否有空值
+    if df[required_columns].isnull().any().any():
+        raise HTTPException(status_code=400, detail='Q-Table contains null values')
+    
     # 以 state 為 row, action 為 column, value 為 cell
-    pivot = df.pivot(index='state', columns='action', values='value').fillna(0)
+    try:
+        pivot = df.pivot(index='state', columns='action', values='value').fillna(0)
+        
+        # 檢查 pivot 結果是否為空
+        if pivot.empty:
+            raise HTTPException(status_code=400, detail='Q-Table pivot result is empty')
+            
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f'Q-Table pivot failed: {str(e)}')
+    
     plt.figure(figsize=(8, 6))
     plt.title('Q-Table Heatmap')
     plt.imshow(pivot, cmap='viridis', aspect='auto')
@@ -50,6 +75,11 @@ def get_qtable_heatmap(job_id: str):
     plt.close()
     buf.seek(0)
     heatmap_png_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    
+    # 檢查生成的圖像是否太小（可能有問題）
+    if len(heatmap_png_base64) < 100:
+        raise HTTPException(status_code=500, detail='Generated heatmap image is too small, possibly corrupted')
+    
     return {"heatmap_png_base64": heatmap_png_base64}
 
 @app.get('/{job_id}/optimal-path')
@@ -472,6 +502,46 @@ def get_analysis_report(job_id: str):
     with open(report_path, 'r', encoding='utf-8') as f:
         content = f.read()
     return {"content": content}
+
+@app.get('/{job_id}/analysis.html')
+def get_analysis_html(job_id: str):
+    """直接返回 analysis.html 的內容供前端嵌入"""
+    html_path = os.path.join(JOBS_DIR, job_id, 'analysis.html')
+    if not os.path.exists(html_path):
+        raise HTTPException(status_code=404, detail='Analysis HTML not found')
+    with open(html_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return {"html_content": content}
+
+@app.get('/{job_id}/config.json')
+def get_job_config(job_id: str):
+    """返回 job 的配置信息"""
+    config_path = os.path.join(JOBS_DIR, job_id, 'config.json')
+    if not os.path.exists(config_path):
+        raise HTTPException(status_code=404, detail='Job config not found')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config_data = json.load(f)
+    return config_data
+
+@app.get('/{job_id}/rule.json')
+def get_job_rule(job_id: str):
+    """返回 job 專用的 rule.json"""
+    rule_path = os.path.join(JOBS_DIR, job_id, 'rule.json')
+    if not os.path.exists(rule_path):
+        raise HTTPException(status_code=404, detail='Job rule not found')
+    with open(rule_path, 'r', encoding='utf-8') as f:
+        rule_data = json.load(f)
+    return rule_data
+
+@app.get('/{job_id}/map.json')
+def get_job_map(job_id: str):
+    """返回 job 專用的 map.json"""
+    map_path = os.path.join(JOBS_DIR, job_id, 'map.json')
+    if not os.path.exists(map_path):
+        raise HTTPException(status_code=404, detail='Job map not found')
+    with open(map_path, 'r', encoding='utf-8') as f:
+        map_data = json.load(f)
+    return map_data
 
 @app.get('/{job_id}/verify')
 def verify_training_api(job_id: str):
