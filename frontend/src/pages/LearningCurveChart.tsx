@@ -9,6 +9,8 @@ import {
   Title,
   Tooltip,
   Legend,
+  TooltipItem,
+  ChartType,
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -20,10 +22,10 @@ interface LearningCurveChartProps {
 
 const LearningCurveChart: React.FC<LearningCurveChartProps> = ({ rewards, steps }) => {
   const data = {
-    labels: rewards.map((_, i) => `回合 ${i + 1}`),
+    labels: rewards.map((_, i) => `${i + 1}`),
     datasets: [
       {
-        label: '每回合獎勵',
+        label: 'Reward',
         data: rewards,
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -32,7 +34,7 @@ const LearningCurveChart: React.FC<LearningCurveChartProps> = ({ rewards, steps 
         fill: true,
       },
       {
-        label: '每回合步數',
+        label: 'Steps',
         data: steps,
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -52,16 +54,13 @@ const LearningCurveChart: React.FC<LearningCurveChartProps> = ({ rewards, steps 
     },
     stacked: false,
     plugins: {
-      title: {
-        display: true,
-        text: '學習曲線 (獎勵 vs 步數)',
-        font: { size: 18 },
-      },
+      legend: { position: 'top' as const },
+      title: { display: true, text: 'Learning Curve (Reward vs Steps)' },
       tooltip: {
-        boxPadding: 4,
-      },
-      legend: {
-        position: 'top' as const,
+        callbacks: {
+          title: (items: TooltipItem<ChartType>[]) => `Episode ${items[0].label}`,
+          label: (item: TooltipItem<ChartType>) => `${item.dataset.label}: ${item.formattedValue}`,
+        },
       },
     },
     scales: {
@@ -71,7 +70,7 @@ const LearningCurveChart: React.FC<LearningCurveChartProps> = ({ rewards, steps 
         position: 'left' as const,
         title: {
           display: true,
-          text: '獎勵值',
+          text: 'Reward',
         },
       },
       y1: {
@@ -80,10 +79,19 @@ const LearningCurveChart: React.FC<LearningCurveChartProps> = ({ rewards, steps 
         position: 'right' as const,
         title: {
           display: true,
-          text: '步數',
+          text: 'Steps',
         },
         grid: {
           drawOnChartArea: false,
+        },
+      },
+      x: {
+        type: 'linear' as const,
+        display: true,
+        position: 'bottom' as const,
+        title: {
+          display: true,
+          text: 'Episode',
         },
       },
     },

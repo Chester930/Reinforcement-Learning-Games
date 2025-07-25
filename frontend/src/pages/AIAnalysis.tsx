@@ -127,7 +127,7 @@ const AIAnalysis: React.FC = () => {
       try {
         // 並行載入分析數據
         const [learningRes, heatmapRes] = await Promise.all([
-          axios.get(`${API_BASE}/analysis/${selectedJob}/learning_curve`).catch(() => null),
+          axios.get(`${API_BASE}/analysis/${selectedJob}/curve`).catch(() => null),
           axios.get(`${API_BASE}/analysis/${selectedJob}/heatmap`).catch(() => null),
         ]);
 
@@ -138,9 +138,13 @@ const AIAnalysis: React.FC = () => {
 
         // 載入 optimal path
         try {
-          const pathRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/optimal_path`);
+          const pathRes = await axios.get(`${API_BASE}/analysis/${selectedJob}/optimal-path`);
           if (pathRes.data?.optimal_path_png_base64) {
             setPathUrl(`data:image/png;base64,${pathRes.data.optimal_path_png_base64}`);
+          }
+          // 新增：如果有 path，設置 optimalPath 狀態
+          if (pathRes.data?.optimal_path) {
+            setOptimalPath(pathRes.data.optimal_path);
           }
         } catch (error) {
           console.error('載入最佳路徑失敗:', error);
@@ -202,7 +206,7 @@ const AIAnalysis: React.FC = () => {
               } catch (mapError) {
                 console.error('❌ 從 maps 目錄載入地圖失敗:', mapError);
               }
-            } else {
+          } else {
               console.log('⚠️ 無 map_id，跳過 maps API 載入');
             }
           }
@@ -577,12 +581,15 @@ const AIAnalysis: React.FC = () => {
                       </Box>
                     </Box>
                     {/* 學習曲線圖表（自動解析 data-rewards/data-steps） */}
-                    {extractedChartData && (
+                    {curveData && curveData.rewards && curveData.steps && curveData.rewards.length > 0 && curveData.steps.length > 0 && (
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
                           📈 學習曲線分析
                         </Typography>
-                        <LearningCurveChart rewards={extractedChartData.rewards} steps={extractedChartData.steps} />
+                        <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+                          顯示每回合的總獎勵與步數，觀察學習收斂情形。
+                        </Typography>
+                        <LearningCurveChart rewards={curveData.rewards} steps={curveData.steps} />
                       </Box>
                     )}
 
@@ -627,22 +634,13 @@ const AIAnalysis: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* 最優路徑 */}
-                    {mapData && optimalPath && (
+                    {/* 最優路徑動畫模擬 */}
+                    {mapDataInfo && mapDataInfo.map && optimalPath && (
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
-                          🎯 最優路徑分析（動畫模擬）
+                          🎯 最優路徑動畫模擬
                         </Typography>
-                        <AIAnalysisPathSim map={mapData} path={optimalPath} />
-                        <Box sx={{ p: 2, background: '#f0fff0', borderRadius: 1 }}>
-                          <Typography variant="body2" sx={{ color: '#555' }}>
-                            <b>🎯 最優路徑說明：</b><br/>
-                            • <b>路徑顯示</b>：AI根據學習到的Q-Table選擇的最佳行動序列<br/>
-                            • <b>起點</b>：🧑‍🌾 探險家起始位置<br/>
-                            • <b>終點</b>：🏁 目標位置<br/>
-                            • <b>路徑特點</b>：避開陷阱，收集寶箱，尋找最短到達終點的路徑
-                          </Typography>
-                        </Box>
+                        <AIAnalysisPathSim map={mapDataInfo.map} path={optimalPath} />
                       </Box>
                     )}
 
@@ -653,7 +651,7 @@ const AIAnalysis: React.FC = () => {
                       </Typography>
                       <Box sx={{ p: 3, background: '#fffbe7', borderRadius: 2, border: '1px solid #ffeaa7' }}>
                         {report ? (
-                          <div dangerouslySetInnerHTML={{ __html: report }} />
+                        <div dangerouslySetInnerHTML={{ __html: report }} />
                         ) : (
                           <Typography variant="body2" sx={{ color: '#666', textAlign: 'center', py: 4 }}>
                             分析報告載入中，或尚未生成分析報告...<br/>
