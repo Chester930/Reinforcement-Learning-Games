@@ -1,0 +1,15 @@
+{
+  "id": "e0a8e870-79d5-4d9b-a61d-c3a391437ee5",
+  "name": "111",
+  "bonusReward": 20,
+  "stepDecay": 0.99,
+  "stepPenalty": 0.0,
+  "goalReward": 1000,
+  "wallPenalty": 3,
+  "maxSteps": 100,
+  "learningRate": 0.1,
+  "discountFactor": 0.98,
+  "epsilon": 1.0,
+  "seed": null,
+  "optimistic": true
+}

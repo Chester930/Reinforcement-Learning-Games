@@ -73,11 +73,24 @@ const AIAnalysis: React.FC = () => {
         }
         setReport(htmlContent);
         setShowReanalyze(true);
+        
+        // 分析成功後，重新載入所有數據
+        setTimeout(() => {
+          // 觸發重新載入數據
+          const currentJob = selectedJob;
+          setSelectedJob('');
+          setTimeout(() => setSelectedJob(currentJob), 1000);
+        }, 1000);
       } else {
         setError('分析完成但沒有返回內容');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || '分析失敗');
+      console.error('分析錯誤:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          '分析失敗';
+      setError(`分析失敗: ${errorMessage}`);
     } finally {
       setReportLoading(false);
     }
@@ -228,6 +241,7 @@ const AIAnalysis: React.FC = () => {
             setReport(htmlRes.data.html_content);
             setReportType('html');
             reportLoaded = true;
+            setShowReanalyze(true); // 有報告時設置為true
             console.log('✅ 成功載入 analysis.html');
           }
         } catch (error) {
@@ -249,15 +263,21 @@ const AIAnalysis: React.FC = () => {
                 .replace(/\n/g, '<br>');
               setReport(`<html><body>${htmlContent}</body></html>`);
               setReportType('md');
+              setShowReanalyze(true); // 有報告時設置為true
               console.log('⚠️ 使用 /report API fallback');
             }
           } catch (error) {
             console.log('❌ 所有分析報告載入方式都失敗');
+            // 如果都沒有報告，顯示提示信息
+            setReport('<div style="text-align: center; padding: 40px; color: #666;"><h3>📝 尚未生成分析報告</h3><p>此訓練任務尚未進行AI分析，請點擊下方按鈕生成分析報告。</p></div>');
+            setReportType('none');
+            setShowReanalyze(false); // 沒有報告時設置為false
           }
         }
 
       } catch (error) {
         console.error('載入分析數據失敗:', error);
+        setError(`載入數據失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
       } finally {
         setLoading(false);
       }
@@ -323,9 +343,24 @@ const AIAnalysis: React.FC = () => {
           htmlContent = markdownToHtml(response.data.md);
         }
         setReport(htmlContent);
+        
+        // 重新分析成功後，重新載入所有數據
+        setTimeout(() => {
+          // 觸發重新載入數據
+          const currentJob = selectedJob;
+          setSelectedJob('');
+          setTimeout(() => setSelectedJob(currentJob), 1000);
+        }, 1000);
+      } else {
+        setError('重新分析完成但沒有返回內容');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || '重新分析失敗');
+      console.error('重新分析錯誤:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          '重新分析失敗';
+      setError(`重新分析失敗: ${errorMessage}`);
     } finally {
       setReportLoading(false);
     }
@@ -415,15 +450,17 @@ const AIAnalysis: React.FC = () => {
                 </MenuItem>
               ))}
             </Select>
-            {showReanalyze && !reportLoading && (
+
+            {/* 如果沒有報告但有選中的任務，顯示生成分析按鈕 */}
+            {(!report || reportType === 'none') && selectedJob && !loading && !reportLoading && (
               <Button 
                 variant="contained" 
-                color="primary" 
+                color="secondary" 
                 size="small"
-                onClick={handleReanalyze}
+                onClick={handleAnalyze}
                 sx={{ fontSize: '0.8rem' }}
               >
-                🔄 重新分析
+                🤖 生成分析報告
               </Button>
             )}
           </Box>
@@ -442,9 +479,38 @@ const AIAnalysis: React.FC = () => {
             <Box>
               {/* 分析報告（包含所有內容） */}
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2c5aa0' }}>
-                  🤖 強化學習訓練分析報告
-                </Typography>
+                {/* 在標題旁邊添加重新分析按鈕 */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2c5aa0' }}>
+                    🤖 強化學習訓練分析報告
+                  </Typography>
+                  {selectedJob && !reportLoading && (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      {(!report || reportType === 'none') && (
+                        <Button 
+                          variant="contained" 
+                          color="secondary" 
+                          size="small"
+                          onClick={handleAnalyze}
+                          sx={{ fontSize: '0.8rem' }}
+                        >
+                          🤖 生成分析報告
+                        </Button>
+                      )}
+                      {showReanalyze && report && reportType !== 'none' && (
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          size="small"
+                          onClick={handleReanalyze}
+                          sx={{ fontSize: '0.8rem' }}
+                        >
+                          🔄 重新分析
+                        </Button>
+                      )}
+                    </Box>
+                  )}
+                </Box>
                 
                 {reportLoading && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
@@ -674,12 +740,19 @@ const AIAnalysis: React.FC = () => {
                 {error && (
                   <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
                     <Typography variant="body2">
-                      <b>分析失敗</b><br/>
-                      可能原因：<br/>
+                      <b>❌ 分析失敗</b><br/>
+                      <b>錯誤信息：</b> {error}<br/><br/>
+                      <b>可能原因：</b><br/>
                       • 訓練數據不完整或格式錯誤<br/>
                       • AI 分析服務暫時不可用<br/>
                       • 數據格式不支援<br/>
-                      請稍後重試或檢查訓練是否完成。
+                      • 網絡連接問題<br/>
+                      • 後端服務異常<br/><br/>
+                      <b>解決方案：</b><br/>
+                      • 檢查訓練是否完成<br/>
+                      • 稍後重試<br/>
+                      • 重新選擇訓練任務<br/>
+                      • 聯繫系統管理員
                     </Typography>
                   </Alert>
                 )}

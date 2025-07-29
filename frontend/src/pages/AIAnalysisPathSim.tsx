@@ -23,6 +23,9 @@ const AIAnalysisPathSim: React.FC<AIAnalysisPathSimProps> = ({ map, path, scoreL
   const [playing, setPlaying] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 驗證輸入數據
+  const isValidData = map && map.length > 0 && path && path.length > 0;
+
   useEffect(() => {
     if (playing && step < path.length - 1) {
       timerRef.current = setTimeout(() => setStep(s => s + 1), 600);
@@ -39,6 +42,28 @@ const AIAnalysisPathSim: React.FC<AIAnalysisPathSimProps> = ({ map, path, scoreL
   // 取得目前位置
   const [curI, curJ] = path[step] || [0, 0];
   const curScore = scoreList ? scoreList[step] : undefined;
+
+  // 如果數據無效，顯示錯誤信息
+  if (!isValidData) {
+    return (
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>最佳路徑動畫模擬</Typography>
+        <Box sx={{ 
+          minHeight: 200, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          background: '#fff', 
+          border: '1px solid #eee', 
+          borderRadius: 4 
+        }}>
+          <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 600 }}>
+            ⚠️ 路徑數據不完整，無法顯示動畫模擬
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ my: 4 }}>

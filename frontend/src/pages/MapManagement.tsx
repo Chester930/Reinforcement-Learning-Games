@@ -73,6 +73,23 @@ function DragMapEditor({
     }
     setMapData(newMap);
   };
+
+  // 新增：處理拖拽到地圖外的刪除功能
+  const handleMapAreaDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const fromRow = e.dataTransfer.getData('fromRow');
+    const fromCol = e.dataTransfer.getData('fromCol');
+    
+    if (fromRow && fromCol) {
+      // 從地圖內拖拽到地圖外，刪除該元件
+      const fr = parseInt(fromRow, 10);
+      const fc = parseInt(fromCol, 10);
+      const newMap = mapData.map((r: MapCell[]) => r.slice());
+      newMap[fr][fc] = { type: 'empty' };
+      setMapData(newMap);
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
@@ -141,6 +158,31 @@ function DragMapEditor({
               );
             })
           )}
+        </Box>
+        {/* 新增：地圖外刪除區域 */}
+        <Box 
+          sx={{ 
+            mt: 2, 
+            p: 2, 
+            border: '2px dashed #ff6b6b', 
+            borderRadius: 2, 
+            background: '#fff5f5', 
+            textAlign: 'center',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              background: '#ffe6e6',
+              borderColor: '#ff4757'
+            }
+          }}
+          onDrop={handleMapAreaDrop}
+          onDragOver={handleDragOver}
+        >
+          <Typography variant="body2" sx={{ color: '#ff6b6b', fontWeight: 600 }}>
+            🗑️ 拖拽元件到此處刪除
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5 }}>
+            將地圖內的元件拖拽到此區域即可刪除
+          </Typography>
         </Box>
       </Paper>
     </Box>

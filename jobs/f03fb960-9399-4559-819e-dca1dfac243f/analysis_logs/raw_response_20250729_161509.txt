@@ -1,0 +1,336 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化學習訓練分析報告</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #212529;
+            --heading-color: #343a40;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--heading-color);
+            margin: 0;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+
+        .section {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section h3 {
+            font-size: 1.4rem;
+            color: var(--heading-color);
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            background-color: #fdfdff;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 5px solid var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .summary-card strong {
+            display: block;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        .summary-card .value.trend-up { color: var(--success-color); }
+        .summary-card .value.trend-down { color: var(--success-color); }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        li::before {
+            content: "•";
+            color: var(--primary-color);
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+        }
+
+        .chart-data {
+            display: none; /* Hidden from view, for JS to parse */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f2f2f2;
+            color: var(--heading-color);
+        }
+
+        .code-block {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .score-container {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .score-value {
+            font-size: 4rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            header h1 {
+                font-size: 2rem;
+            }
+            .section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>強化學習訓練分析報告</h1>
+            <p>基於用戶提供的訓練數據進行的專業評估與建議</p>
+        </header>
+
+        <div class="section">
+            <h2>訓練摘要</h2>
+            <div class="grid-container">
+                <div class="summary-card">
+                    <strong>總回合數</strong>
+                    <span class="value">1000</span>
+                </div>
+                <div class="summary-card">
+                    <strong>平均獎勵</strong>
+                    <span class="value">81.56</span>
+                </div>
+                <div class="summary-card">
+                    <strong>平均步數</strong>
+                    <span class="value">10.89</span>
+                </div>
+                <div class="summary-card">
+                    <strong>最終獎勵</strong>
+                    <span class="value">104</span>
+                </div>
+                <div class="summary-card">
+                    <strong>獎勵趨勢</strong>
+                    <span class="value trend-up">上升</span>
+                </div>
+                <div class="summary-card">
+                    <strong>步數趨勢</strong>
+                    <span class="value trend-down">下降</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>1. 學習效果評估</h2>
+            <h3>學習曲線分析</h3>
+            <p>以下為訓練前20回合的獎勵（Rewards）與步數（Steps）數據。前端腳本可使用此數據渲染圖表。圖表應顯示兩條曲線：一條為獎勵變化，另一條為步數變化，X軸為回合數（Episodes）。</p>
+            <div class="chart-container">
+                <p><strong>數據分析：</strong></p>
+                <ul>
+                    <li><strong>初期不穩定性：</strong>訓練初期（前20回合）獎勵和步數波動劇烈。例如，獎勵在-20到+110之間大幅震盪，步數也從3步到41步不等。這反映了智能體（Agent）在探索環境初期的典型隨機行為。</li>
+                    <li><strong>趨勢符合預期：</strong>儘管初期不穩定，但訓練摘要顯示，在1000回合的尺度上，獎勵總體呈上升趨勢，步數呈下降趨勢。這表明智能體成功地從經驗中學習，逐漸找到了更優的策略。</li>
+                    <li><strong>收斂性判斷：</strong>從摘要數據（平均獎勵81.56，最終獎勵104）來看，訓練後期性能已趨於穩定和高效，表明模型已接近收斂或已經收斂。高最終獎勵和低最終步數是學習成功的有力證據。</li>
+                    <li><strong>最終性能：</strong>最終回合獲得104的獎勵，僅用8步完成，這是一個非常優秀的性能表現，說明智能體已學習到一個高效且接近最優的策略。</li>
+                </ul>
+            </div>
+            <div id="learning-curve-data" class="chart-data">
+                {
+                    "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+                    "rewards": [-9, -1, -6, 5, 86, -18, 7, -4, -20, -18, -4, 7, 110, -12, 93, 5, 9, 107, -6, -2],
+                    "steps": [21, 13, 7, 7, 26, 41, 5, 5, 21, 41, 5, 5, 24, 13, 30, 7, 3, 16, 7, 3]
+                }
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. 問題診斷</h2>
+            <h3>Q-Table 價值分佈</h3>
+            <p>Q-Table 的抽樣數據顯示，智能體已成功為高價值的「狀態-動作」對分配了較高的Q值。這表明價值函數學習得很好。</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>State (Row, Col)</th>
+                        <th>Action</th>
+                        <th>Q-Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>(1, 3)</td><td>right</td><td>103.04</td></tr>
+                    <tr><td>(3, 4)</td><td>down</td><td>101.00</td></tr>
+                    <tr><td>(1, 2)</td><td>right</td><td>99.73</td></tr>
+                    <tr><td>(2, 4)</td><td>down</td><td>97.96</td></tr>
+                    <tr><td>(1, 1)</td><td>right</td><td>96.22</td></tr>
+                </tbody>
+            </table>
+            <p><strong>分析：</strong>Q值最高的動作（如在狀態(1,3)選擇'right'，在狀態(3,4)選擇'down'）清晰地指向了通往高獎勵目標的路徑，符合最優路徑的邏輯。</p>
+
+            <h3>最優路徑評估</h3>
+            <p>智能體利用學習到的Q-Table選擇的最優路徑如下：</p>
+            <div class="code-block">(0, 0) → (1, 0) → (1, 1) → (1, 2) → (1, 3) → (1, 4) → (2, 4) → (3, 4) → (4, 4)</div>
+            <p><strong>分析：</strong></p>
+            <ul>
+                <li><strong>路徑合理性：</strong>該路徑共9個狀態，計8個步驟，是一條從起點(0,0)到終點(4,4)的連貫且高效的路徑。它沒有出現循環或無效移動。</li>
+                <li><strong>潛在問題：</strong>訓練初期的高步數（如41步）表明智能體可能陷入過局部區域或進行了大量無效探索。但最終結果顯示此問題已通過學習被克服。</li>
+                <li><strong>過擬合/欠擬合：</strong>當前策略在訓練環境中表現優異，未見明顯欠擬合。要評估過擬合，需要將此策略應用於一個或多個未見過的測試環境。但從路徑的直接性來看，過擬合風險較低。</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>3. 改進建議</h2>
+            <p>儘管訓練結果良好，仍有進一步優化的空間，特別是針對提升學習效率和穩定性。</p>
+            <h3>參數調整</h3>
+            <ul>
+                <li><strong>探索率 (Epsilon, ε)：</strong>初期的劇烈波動可能源於較高的初始探索率。可以考慮使用更平滑的衰減策略，如指數衰減（Exponential Decay）代替線性衰減，讓智能體在後期更專注於利用（Exploitation）。</li>
+                <li><strong>學習率 (Alpha, α)：</strong>當前的學習似乎是有效的。如果希望更快收斂，可適度提高α；如果希望結果更穩定，可適度降低α並增加訓練回合數。建議值：0.05 ~ 0.2。</li>
+                <li><strong>折扣因子 (Gamma, γ)：</strong>當前智能體能找到長遠目標，說明γ值設置合理（通常為0.9~0.99）。無需大的調整，除非任務目標變為更短視或更長遠。</li>
+            </ul>
+            <h3>訓練策略優化</h3>
+            <ul>
+                <li><strong>增加訓練回合數：</strong>雖然1000回合已收斂，但增加到2000或5000回合可以進一步鞏固學習成果，觀察性能是否能持續微小提升並完全穩定。</li>
+                <li><strong>探索策略升級：</strong>除了傳統的ε-greedy，可以嘗試更先進的探索策略，如置信上界（UCB）或湯普森採樣，這些策略能更智能地平衡探索與利用，可能縮短早期不穩定的階段。</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>4. 算法特性分析</h2>
+            <p>從提供的Q-Table來看，本次訓練使用的很可能是 <strong>Q-Learning</strong> 算法。這是一種經典的、基於價值迭代的離策略（Off-policy）算法。</p>
+            <h3>優點與缺點</h3>
+            <ul>
+                <li><strong>優點：</strong>實現簡單、理論成熟，在離散且狀態空間不大的環境中非常有效。作為離策略算法，它可以從過去的經驗（包括隨機探索的經驗）中學習最優策略，數據利用率較高。</li>
+                <li><strong>缺點：</strong>需要用表格（Q-Table）存儲所有「狀態-動作」對的價值，當狀態或動作空間巨大時，會產生「維度災難」，導致內存需求和計算時間急劇增加。</li>
+            </ul>
+            <h3>與其他算法比較</h3>
+            <ul>
+                <li><strong>vs. SARSA：</strong>SARSA是同策略（On-policy）算法，它基於實際執行的策略進行更新，因此學習過程更「保守」。Q-Learning則基於最優假設更新，表現得更「激進」。在有危險區域（如懸崖）的環境中，SARSA可能學到更安全的路徑。</li>
+                <li><strong>vs. Deep Q-Network (DQN)：</strong>DQN是Q-Learning的延伸，它使用神經網絡來近似Q函數，而非使用表格。這解決了維度災難問題，使其能夠處理高維、連續的狀態空間（如從像素玩遊戲）。如果當前問題的複雜度增加（例如地圖變大），DQN將是理想的升級選擇。</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>5. 總結與評分</h2>
+            <div class="score-container">
+                <div class="score-value">8.5 / 10</div>
+                <div class="score-label">整體訓練效果評分</div>
+            </div>
+            <h3>綜合評述</h3>
+            <ul>
+                <li><strong>主要成就：</strong>本次訓練非常成功。智能體明確地學習到了一個高效、穩定的策略，能夠以接近最優的步數完成任務。Q-Table的價值分佈合理，最終性能指標優秀。</li>
+                <li><strong>主要問題：</strong>訓練初期的探索階段效率較低，表現為獎勵和步數的劇烈波動。這雖然是強化學習的常見現象，但可以通過優化探索策略來改善。</li>
+                <li><strong>實用性評估：</strong>對於當前定義的任務，訓練出的模型具有很高的實用價值。它所產生的最優路徑是可靠和高效的，可以直接部署應用。</li>
+            </ul>
+        </div>
+
+    </div>
+
+</body>
+</html>
+```
