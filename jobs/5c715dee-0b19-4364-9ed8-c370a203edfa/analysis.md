@@ -1,0 +1,390 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化學習訓練分析報告</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --border-color: #dee2e6;
+            --bg-color: #ffffff;
+            --text-color: #333;
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --card-radius: 8px;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        header h1 {
+            color: var(--dark-color);
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+
+        .card {
+            background-color: var(--bg-color);
+            border-radius: var(--card-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+            padding: 25px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        h3 {
+            color: var(--dark-color);
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 10px;
+        }
+
+        ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        
+        .problem-list li::before {
+            content: '✗';
+            color: var(--danger-color);
+        }
+
+        .suggestion-list li::before {
+            content: '→';
+            color: var(--primary-color);
+        }
+        
+        .summary-list li::before {
+            content: '•';
+            color: var(--secondary-color);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-item {
+            background-color: #fdfdfd;
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .summary-item .label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .summary-item .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+        
+        .summary-item .trend.down { color: var(--danger-color); }
+        .summary-item .trend.up { color: var(--danger-color); } /* Step trend up is bad */
+        .summary-item .trend.neutral { color: var(--secondary-color); }
+
+
+        .chart-data-container {
+            background: #e9ecef;
+            border-radius: var(--card-radius);
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .chart-data-container p {
+            margin-top: 0;
+        }
+
+        pre {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+        }
+        
+        code {
+           font-family: "Courier New", Courier, monospace;
+        }
+
+        .score-container {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #0d6efd, #0d9afd);
+            color: white;
+            border-radius: var(--card-radius);
+        }
+        
+        .score-container .score-label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .score-container .score-value {
+            font-size: 4rem;
+            font-weight: 700;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 700;
+            margin: 2px;
+        }
+
+        .tag.critical { background-color: var(--danger-color); color: white; }
+        .tag.warning { background-color: var(--warning-color); color: var(--dark-color); }
+        .tag.info { background-color: var(--primary-color); color: white; }
+        .tag.neutral { background-color: var(--secondary-color); color: white; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>強化學習訓練分析報告</h1>
+            <p>針對用戶提供的訓練數據進行的深入分析與評估</p>
+        </header>
+
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="label">總回合數</div>
+                <div class="value">100</div>
+            </div>
+            <div class="summary-item">
+                <div class="label">平均獎勵</div>
+                <div class="value">-9.03</div>
+            </div>
+            <div class="summary-item">
+                <div class="label">平均步數</div>
+                <div class="value">34.44</div>
+            </div>
+            <div class="summary-item">
+                <div class="label">獎勵趨勢</div>
+                <div class="value trend down">下降</div>
+            </div>
+             <div class="summary-item">
+                <div class="label">步數趨勢</div>
+                <div class="value trend up">上升</div>
+            </div>
+        </div>
+
+        <section class="card">
+            <h2>1. 學習效果評估</h2>
+            <p>綜合評估，AI 不僅未能學習到有效策略，其表現反而隨著訓練進行而惡化，呈現明顯的 <strong>訓練發散</strong> 現象。</p>
+            <ul>
+                <li><strong>學習曲線趨勢：</strong> 學習曲線表現出極端不穩定的特性。獎勵趨勢整體下降，步數趨勢整體上升，這與成功學習的期望（獎勵上升，步數下降）完全相反。多次出現達到100步上限的情況，對應的獎勵為-67，表明AI頻繁陷入困境無法完成任務。</li>
+                <li><strong>策略有效性：</strong> AI 未能學習到任何有效策略。負向的平均獎勵和最終獎勵表明，其行為多數時候會受到懲罰，而不是獲得獎勵。</li>
+                <li><strong>收斂情況：</strong> 訓練完全沒有收斂。各項指標不僅沒有穩定在一個較優水平，反而持續惡化，顯示出嚴重的訓練不穩定或模型發散問題。</li>
+                <li><strong>最終性能：</strong> 最終回合的獎勵（-34）和步數（57）均劣於平均水平，進一步證實了學習過程的失敗。</li>
+            </ul>
+            <div class="chart-data-container">
+                <h3>學習曲線數據 (前20回合)</h3>
+                <p>以下為學習曲線的原始數據，可用於圖表渲染。資料欄位：<b>rewards</b> (每回合總獎勵), <b>steps</b> (每回合總步數)。</p>
+                <pre><code>{
+  "rewards": [11, -18, -39, 6, -27, -9, -67, 15, -67, -45, -2, 18, -7, 19, -13, -67, -2, 25, -11, -67],
+  "steps": [23, 63, 73, 17, 61, 43, 100, 19, 100, 79, 3, 5, 41, 15, 47, 100, 3, 9, 45, 100]
+}</code></pre>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>2. 問題診斷</h2>
+            <p>訓練過程中存在多個嚴重問題，導致了學習的徹底失敗。核心問題在於AI學到了錯誤的價值觀，並陷入了無法逃脫的循環。</p>
+            <ul class="problem-list">
+                <li><strong class="tag critical">策略循環 (Policy Loop)</strong>：最優路徑分析顯示了致命缺陷：路徑在 `(0, 3)` 和 `(1, 3)` 之間形成了無限循環。這意味著AI認為在這兩個狀態之間來回移動是最佳策略，導致它永遠無法到達目標或結束回合，這是Q值更新錯誤的典型症狀。</li>
+                <li><strong class="tag critical">訓練發散 (Divergence)</strong>：獎勵持續下降，步數持續上升，表明學習過程是發散的，而非收斂。這通常由不合適的超參數（如過高的學習率）或有問題的獎勵函數引起。</li>
+                <li><strong class="tag warning">探索不足 (Insufficient Exploration)</strong>：Q-Table數據極度稀疏，只有極少數的狀態-動作對有非零值。這表明AI在100回合內僅探索了環境的一小部分，大多數狀態從未被充分訪問和評估，因此無法建立一個有意義的價值函數。</li>
+                <li><strong class="tag warning">Q-Table學習質量差</strong>：除了稀疏問題，Q-Table中僅有的最高價值 `0.581` 也很低，且周圍的值均為0。這表明價值未能有效地從獎勵點反向傳播到其他狀態，可能是折扣因子或學習率設置不當。</li>
+                 <li><strong class="tag neutral">模型欠擬合</strong>：目前模型遠未學習到環境的基本規則，處於嚴重的欠擬合狀態。它沒有捕捉到任何關於如何達成目標的有用資訊。</li>
+            </ul>
+             <h3>最優路徑分析</h3>
+             <p>AI選擇的路徑 <code>[(4, 4), ..., (0, 3), (1, 3)]</code> 清晰地揭示了策略循環問題。從狀態 <code>(0, 3)</code> 的最優動作是移動到 <code>(1, 3)</code>，而從 <code>(1, 3)</code> 的最優動作很可能是移回 <code>(0, 3)</code>。</p>
+        </section>
+
+        <section class="card">
+            <h2>3. 改進建議</h2>
+            <p>要解決當前的困境，需要從根本上調整訓練策略和超參數。</p>
+            <ul class="suggestion-list">
+                <li><strong>調整超參數 (Hyperparameters)</strong>
+                    <ul>
+                        <li><strong>學習率 (Learning Rate, α):</strong> 當前可能過高導致不穩定，或過低導致學習緩慢。建議從一個較小的值開始，如 <strong>0.1</strong>，並觀察是否穩定。如果穩定但學習慢，再逐步提高。</li>
+                        <li><strong>探索率 (Epsilon, ε):</strong> 探索明顯不足。建議採用更高的初始探索率 (如 <strong>1.0</strong>)，並使用更緩慢的衰減策略（例如，衰減到一個較小的最小值如 <strong>0.05</strong> 而不是0），確保在訓練後期仍有探索機會。</li>
+                        <li><strong>折扣因子 (Discount Factor, γ):</strong> 如果目標獎勵遙遠，較高的折扣因子（如 <strong>0.99</strong>）有助於價值回傳。當前值可能過低。</li>
+                    </ul>
+                </li>
+                <li><strong>優化訓練策略</strong>
+                    <ul>
+                        <li><strong>獎勵塑形 (Reward Shaping):</strong> 當前的獎勵機制可能過於稀疏（只有終點有獎勵）。考慮增加「塑形」獎勵：例如，每走一步給予一個小的負獎勵（如 <strong>-0.1</strong>）以鼓勵效率；或者根據與目標距離的遠近給予額外獎勵。</li>
+                        <li><strong>增加訓練回合數:</strong> 100回合對於多數強化學習問題是遠遠不夠的。建議將訓練回合數大幅增加至 <strong>2,000 到 10,000</strong> 回合，並持續監控學習曲線以判斷收斂情況。</li>
+                    </ul>
+                </li>
+                <li><strong>調試與監控</strong>
+                    <ul>
+                        <li><strong>定期評估策略:</strong> 在訓練過程中，每隔一定回合（如100回合）就評估一次當前策略的表現（關閉探索），以更準確地追蹤學習進度。</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>4. 算法特性分析</h2>
+            <p>從提供的Q-Table來看，當前使用的很可能是基礎的 <strong>Q-Learning</strong> 算法。</p>
+            <table >
+                <thead>
+                    <tr>
+                        <th>特性</th>
+                        <th>分析</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>優點</strong></td>
+                        <td>算法概念簡單，易於實現。對於狀態和動作空間較小的離散環境，在超參數合適時能有效收斂到最優策略。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>缺點</strong></td>
+                        <td>對超參數敏感，不當的設置極易導致訓練不穩定或發散（如此次案例）。需要用表格儲存所有Q值，在狀態空間巨大時會產生維度災難。樣本效率（Sample Efficiency）相對較低。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>適用場景</strong></td>
+                        <td>非常適合入門級的、確定性的、狀態空間可數的環境，如迷宮、井字棋等。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>算法建議</strong></td>
+                        <td>對於當前問題，Q-Learning本身是合適的，問題出在應用層面。暫時無需更換為更複雜的算法（如DQN、A3C等），應首先專注於調優當前的Q-Learning實現。只有在狀態空間極大或連續時，才需要考慮基於神經網絡的函數逼近方法。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>5. 總結與評分</h2>
+            <div class="score-container">
+                <div class="score-label">整體訓練效果評分</div>
+                <div class="score-value">2 / 10</div>
+            </div>
+            <br>
+            <h3>綜合評述</h3>
+            <p>本次訓練在搭建了基礎的強化學習框架方面邁出了第一步，但學習過程完全失敗。模型不僅沒有學到任何有益的策略，反而學到了導致任務失敗的錯誤行為。這是一次典型的「訓練失敗」案例，但也是一個極佳的學習和調試機會。</p>
+            <ul class="summary-list">
+                <li><strong>主要成就：</strong>
+                    <ul>
+                        <li>成功搭建了Agent與環境的交互循環。</li>
+                        <li>實現了Q-Table的更新機制。</li>
+                    </ul>
+                </li>
+                <li><strong>主要問題：</strong>
+                    <ul>
+                        <li><strong class="tag critical">訓練發散</strong>：學習曲線指標全面惡化。</li>
+                        <li><strong class="tag critical">策略循環</strong>：學到了無效的循環路徑。</li>
+                        <li><strong class="tag warning">超參數失當</strong>：學習率、探索率等參數配置不合理。</li>
+                        <li><strong class="tag warning">訓練時長不足</strong>：100回合遠不足以讓模型學習。</li>
+                    </ul>
+                </li>
+                <li><strong>實用性評估：</strong>
+                    <p>當前模型 <strong>完全不具備任何實用價值</strong>。必須根據上述建議進行重大修改和重新訓練，才能期望其解決問題。</p>
+                </li>
+            </ul>
+        </section>
+
+    </div>
+
+</body>
+</html>
+```

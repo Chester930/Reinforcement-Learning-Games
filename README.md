@@ -103,6 +103,13 @@ S  0  G
 
 ### 🛠️ 環境設定（5 分鐘）
 
+#### 0️⃣ 環境檢查（可選）
+在開始之前，你可以運行環境檢查腳本來確認所有設定都正確：
+
+```bash
+python check_environment.py
+```
+
 #### 1️⃣ 安裝 Python 環境
 ```bash
 # 建立虛擬環境
@@ -121,7 +128,7 @@ pip install -r requirements.txt
 #### 2️⃣ 啟動後端服務
 ```bash
 # 啟動 API 服務（保持此終端機開啟）
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### 3️⃣ 啟動前端介面
@@ -140,6 +147,23 @@ npm start
 打開瀏覽器，前往 `http://localhost:3000`
 
 🎉 **恭喜！你已經成功啟動平台了！**
+
+### 🚀 快速啟動（Windows 用戶）
+如果你使用 Windows，可以使用提供的批處理檔案：
+
+```bash
+# 啟動後端服務
+start_backend.bat
+
+# 啟動前端服務（在新的終端機視窗中）
+start_frontend.bat
+```
+
+### ⚠️ 重要提醒
+- **後端啟動**：使用 `python -m uvicorn` 而不是直接使用 `uvicorn` 命令
+- **套件安裝**：確保所有套件都已正確安裝，特別是 `python-multipart`
+- **訓練任務**：首次使用時，建議先進行一次 AI 訓練，這樣分析功能才能正常運作
+- **分析功能**：只有完成訓練後，學習曲線、熱力圖和最優路徑功能才能正常顯示
 
 ---
 
@@ -163,8 +187,9 @@ npm start
 #### 🔰 新手入門（第 1-2 天）
 1. **🎮 手動遊玩** → 熟悉遊戲規則
 2. **🗺️ 建立簡單地圖** → 設計 3x3 的基礎地圖
-3. **🤖 第一次 AI 訓練** → 使用預設參數訓練
-4. **📊 查看結果** → 觀察學習曲線
+3. **🤖 第一次 AI 訓練** → 使用預設參數訓練（**重要：確保訓練完成**）
+4. **📊 查看結果** → 觀察學習曲線、熱力圖和最優路徑
+5. **🔍 分析報告** → 查看 AI 生成的詳細分析報告
 
 #### 🔄 進階實驗（第 3-5 天）
 1. **🧪 參數實驗** → 調整學習率、探索率
@@ -350,7 +375,16 @@ netstat -ano | findstr :8000  # Windows
 lsof -i :8000  # macOS/Linux
 
 # 使用其他端口
-uvicorn main:app --reload --port 8001
+python -m uvicorn main:app --reload --port 8001
+```
+
+#### ❓ **Q1.1: uvicorn 命令無法識別**
+```bash
+# 解決方案：使用 python -m uvicorn
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# 或者安裝 python-multipart
+pip install python-multipart
 ```
 
 #### ❓ **Q2: 前端無法連接到後端 API**
@@ -365,6 +399,13 @@ uvicorn main:app --reload --port 8001
 - 🔍 探索率衰減太快
 - 📊 訓練回合數不足
 - 🗺️ 地圖設計過於複雜
+
+#### ❓ **Q3.1: 分析功能顯示 404 錯誤**
+**解決方案：**
+1. 確保已經完成至少一次 AI 訓練
+2. 檢查 job 目錄中是否有 `log.csv` 和 `q_table.csv` 檔案
+3. 重新進行訓練，確保訓練過程完整完成
+4. 如果問題持續，嘗試清除舊的 job 目錄並重新訓練
 
 ### 🎓 學習問題
 

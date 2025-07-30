@@ -1,0 +1,7 @@
+{
+  "timestamp": "20250730_222800",
+  "job_id": "5c715dee-0b19-4364-9ed8-c370a203edfa",
+  "has_markdown_block": false,
+  "markdown_content_length": 13595,
+  "markdown_content_preview": "```html\n<!DOCTYPE html>\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>強化學習訓練分析報告</title>\n    <style>\n        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');\n\n        :root {\n            --primary-color: #0d6efd;\n            --secondary-color: #6c757d;\n            --success-color: #198754;\n            --warning-color: #ffc107;\n            --danger-color: #d..."
+}
